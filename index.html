@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>МВД · Автопарк и форма</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0e1116;--bg2:#131820;--card:#191f28;--line:#27303d;--txt:#e9edf4;--mut:#8b95a7;--acc:#4da3ff;--green:#2fd97a;--yellow:#f7c948;--red:#ff5c5c}
+html{color-scheme:dark}
+body{background:radial-gradient(1100px 520px at 8% -10%,rgba(45,100,170,.17),transparent 60%),radial-gradient(900px 520px at 115% 115%,rgba(130,90,220,.11),transparent 55%),#0e1116;color:var(--txt);font-family:Inter,system-ui,'Segoe UI',Roboto,sans-serif;font-size:14px;min-height:100vh}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#2a3342;border-radius:8px;border:2px solid #131820}
+::-webkit-scrollbar-thumb:hover{background:#3a4656}
+#errbox{display:none;position:fixed;left:12px;top:12px;z-index:990;background:#3a1414;border:1px solid #a34444;color:#ffb3b3;padding:12px 16px;border-radius:10px;font:12px/1.5 monospace;max-width:85%;white-space:pre-wrap}
+button{touch-action:manipulation}
+
+/* ── шапка ── */
+#topbar{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid var(--line);background:rgba(14,17,22,.92);position:sticky;top:0;z-index:50;backdrop-filter:blur(10px);box-shadow:0 6px 24px rgba(0,0,0,.35);gap:10px}
+.tb-left{display:flex;align-items:center;gap:12px;min-width:0}
+.logo-ic{width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,#33578b,#17304f);display:flex;align-items:center;justify-content:center;font-size:17px;border:1px solid #3d557f;box-shadow:0 4px 14px rgba(30,80,160,.28);flex:0 0 34px;transition:transform .25s}
+.tb-title{font-weight:800;letter-spacing:1.5px;font-size:13px;background:linear-gradient(90deg,#eaf2ff,#9fc4ee);-webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-right{display:flex;align-items:center;gap:10px}
+.sync{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;color:var(--mut);white-space:nowrap}
+.sync i{width:8px;height:8px;border-radius:50%;background:#55606f;transition:background .3s,box-shadow .3s}
+.sync.ok i{background:var(--green);box-shadow:0 0 8px rgba(47,217,122,.55)}
+.sync.busy i{background:var(--yellow);box-shadow:0 0 8px rgba(247,201,72,.4)}
+.sync.err i{background:var(--red);box-shadow:0 0 8px rgba(255,92,92,.4)}
+.adbadge{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:10px;border:1px solid rgba(47,217,122,.4);background:rgba(47,217,122,.1);color:#7ce6a8;font-size:11.5px;font-weight:800;white-space:nowrap}
+
+#content{padding:22px;max-width:1440px;width:100%;margin:0 auto;animation:fade .3s}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}}
+
+/* ── заголовок + табы + кнопка добавления ── */
+.ph{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:2px}
+h1{font-size:23px;font-weight:800;letter-spacing:-.3px}
+.cnt{font-size:12px;background:#22304a;border:1px solid #32456a;color:#a9c7ef;padding:2px 10px;border-radius:12px;vertical-align:middle;margin-left:8px}
+.ph-sub{color:var(--mut);font-size:12.5px;margin-top:5px}
+.ph-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-top:2px}
+.tabs{display:flex;gap:5px;background:#141a23;border:1px solid var(--line);border-radius:13px;padding:5px}
+.tab{padding:9px 18px;border-radius:9px;border:1px solid transparent;background:transparent;color:var(--mut);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap}
+.tab:hover{color:var(--txt)}
+.tab.on{color:#fff;background:linear-gradient(90deg,rgba(77,163,255,.26),rgba(77,163,255,.07));border-color:rgba(77,163,255,.4);box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
+.btn{background:linear-gradient(145deg,#3684e6,#2868c9);border:1px solid #3a6cb4;color:#fff;padding:9px 15px;border-radius:10px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit;transition:all .18s;box-shadow:0 4px 14px rgba(40,100,190,.25)}
+.btn:hover{filter:brightness(1.12);transform:translateY(-1px)}
+.btn:active{transform:translateY(0) scale(.98)}
+.btn.big{padding:12px 20px;font-size:13px}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--txt);box-shadow:none}
+.btn.ghost:hover{border-color:#3a4757;filter:none}
+.btn.slim{padding:7px 13px;font-size:11.5px}
+.btn.warn{background:linear-gradient(145deg,#a03c3c,#7c2a2a);border-color:#a34444;box-shadow:0 4px 14px rgba(160,60,60,.25)}
+
+/* ── кнопки категорий ── */
+.cats{display:flex;gap:10px;margin:16px 0 12px;flex-wrap:wrap}
+.cat{display:inline-flex;align-items:center;gap:10px;padding:11px 18px;border-radius:13px;border:1px solid var(--line);background:linear-gradient(145deg,#1c2432,#181e28);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;color:var(--mut);font-family:inherit;box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
+.cat:hover{border-color:#3a4757;color:var(--txt);transform:translateY(-1px)}
+.cat:active{transform:scale(.98)}
+.cat.on{border-color:rgba(77,163,255,.5);background:linear-gradient(90deg,rgba(77,163,255,.2),rgba(77,163,255,.05));color:#fff;box-shadow:0 4px 18px rgba(40,100,190,.22)}
+.cat-ic{font-size:15px}
+.cn{margin-left:4px;background:#232e3d;border:1px solid #32405a;padding:1px 8px;border-radius:10px;font-size:10.5px;color:#aeb9cc;font-style:normal;font-weight:700}
+
+/* ── фильтры-ведомства ── */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 10px}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--mut);font-size:12.5px;font-weight:700;cursor:pointer;user-select:none;transition:all .18s}
+.chip:hover{border-color:var(--cc,var(--acc));color:var(--txt)}
+.chip:active{transform:scale(.97)}
+.chip.on{border-color:var(--cc,var(--acc));color:#fff;background:var(--ccb,rgba(77,163,255,.18));box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
+.dot{width:7px;height:7px;border-radius:50%;flex:0 0 7px;box-shadow:0 0 8px 1px var(--cc,transparent);transition:box-shadow .25s}
+
+/* ── панель управления ── */
+.ctl{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0 4px}
+.inp,.sel{background:#141a23;border:1px solid var(--line);color:var(--txt);padding:10px 13px;border-radius:10px;font-size:14px;font-family:inherit;outline:none;transition:border-color .18s,box-shadow .18s}
+.inp:focus,.sel:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(77,163,255,.14)}
+.sel option{background:#141a23}
+textarea.inp{resize:vertical}
+
+/* ── сетка карточек ── */
+.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-top:14px}
+.vcard{background:linear-gradient(145deg,#1c2432,#181e28);border:1px solid var(--line);border-radius:16px;overflow:hidden;position:relative;transition:transform .2s,border-color .2s,box-shadow .2s;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);animation:cardIn .4s both}
+@keyframes cardIn{from{opacity:0;transform:translateY(12px) scale(.98)}}
+.vcard:hover{border-color:#3a4757;transform:translateY(-3px);box-shadow:0 12px 28px rgba(0,0,0,.35)}
+.vcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--dc,#4da3ff);z-index:3}
+.vph{position:relative;aspect-ratio:16/10;background:#141a23;cursor:pointer;overflow:hidden}
+.vph.empty{background:#12161e}
+.vph img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in;animation:fadeIn .4s}
+@keyframes fadeIn{from{opacity:0}}
+.vph.drag{outline:2px dashed var(--dc,var(--acc));outline-offset:-5px}
+.vph-empty{position:absolute;inset:10px;border:1px dashed #2c3644;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:#5b6675;transition:all .2s;text-align:center;padding:6px}
+.vph-empty .pe-ic{font-size:25px;opacity:.7}
+.vph-empty b{color:#8b95a7;font-size:12px;font-weight:700}
+.vph-empty span{font-size:10px}
+.vph:hover .vph-empty{border-color:rgba(77,163,255,.5);color:var(--acc)}
+.vph:hover .vph-empty b{color:#cfe4ff}
+.vph-empty.plain{border-style:solid;border-color:#20262f;cursor:default}
+.vph-empty.plain:hover{border-color:#20262f;color:#5b6675}
+.vdep{position:absolute;left:8px;top:11px;padding:3px 9px;border-radius:8px;font-size:10px;font-weight:800;letter-spacing:.5px;border:1px solid;background:rgba(14,17,22,.72);backdrop-filter:blur(4px);pointer-events:none}
+.vph-tools{position:absolute;top:11px;right:8px;display:flex;gap:6px;opacity:0;transition:opacity .2s;z-index:4}
+.vcard:hover .vph-tools{opacity:1}
+@media(hover:none){.vph-tools{opacity:1}.vcard:hover{transform:none}}
+.vtool{width:28px;height:28px;border-radius:9px;background:rgba(14,17,22,.85);border:1px solid #2e3846;color:#c9d3e3;cursor:pointer;font-size:12px;font-family:inherit;transition:all .15s;backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center}
+.vtool:hover{border-color:var(--acc);color:#fff}
+.vtool.vtool-del:hover{border-color:var(--red);color:#ffb3b3}
+.vbody{padding:12px 14px 14px}
+.vname{font-weight:800;font-size:13.5px;line-height:1.35;min-height:18px;border-radius:6px;padding:1px 3px;margin-left:-3px}
+.vdesc{font-size:11.5px;color:var(--mut);margin-top:6px;line-height:1.5;min-height:17px;border-radius:6px;padding:1px 3px;margin-left:-3px}
+.vsp{display:flex;align-items:baseline;gap:6px;margin-top:10px;padding-top:9px;border-top:1px dashed #232b37}
+.vsp .l{color:#5b6675;text-transform:uppercase;letter-spacing:1.1px;font-weight:800;font-size:9px}
+.vsp b{margin-left:auto;font-size:14px;font-weight:800;color:var(--dc,#6cc0ff);min-width:14px;text-align:right;border-radius:6px;padding:1px 3px}
+.vsp i{font-style:normal;color:var(--mut);font-size:10px;font-weight:700}
+[contenteditable]{outline:none}
+[contenteditable]:focus{background:#141a23;box-shadow:0 0 0 3px rgba(77,163,255,.14)}
+[contenteditable]:empty::before{content:attr(data-ph);color:#4a5462}
+.empty{padding:26px;text-align:center;color:var(--mut);border:1px dashed var(--line);border-radius:12px;margin-top:10px}
+
+/* ── лайтбокс ── */
+#lb{position:fixed;inset:0;z-index:600;background:rgba(4,7,11,0);backdrop-filter:blur(0);display:flex;align-items:center;justify-content:center;padding:26px;cursor:zoom-out;opacity:0;transition:opacity .22s,backdrop-filter .22s;pointer-events:none}
+#lb.show{opacity:1;background:rgba(4,7,11,.88);backdrop-filter:blur(9px);pointer-events:auto}
+#lb img{max-width:min(1150px,92vw);max-height:86vh;border-radius:14px;border:1px solid #2e3846;box-shadow:0 30px 90px rgba(0,0,0,.7);transform:scale(.9);opacity:0;transition:transform .24s ease,opacity .24s ease;cursor:zoom-out}
+#lb.zoom img{transform:scale(1);opacity:1}
+.lb-cap{position:absolute;top:20px;left:24px;font-weight:800;font-size:14px;color:#e9edf4;background:rgba(14,17,22,.72);border:1px solid #2e3846;padding:9px 15px;border-radius:12px;backdrop-filter:blur(6px);max-width:70vw}
+.lb-cap span{display:block;font-weight:600;font-size:11px;color:var(--mut);margin-top:3px}
+.lbdot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px}
+
+/* ── модалки ── */
+.back{position:fixed;inset:0;background:rgba(4,7,11,.75);backdrop-filter:blur(7px);z-index:400;display:flex;justify-content:center;align-items:flex-start;overflow-y:auto;padding:34px 14px;animation:fadeIn .2s}
+#croot .back{z-index:420}
+@keyframes up{from{transform:translateY(24px);opacity:0}}
+.modal{width:100%;max-width:820px;background:#161c25;border:1px solid #2b3442;border-radius:20px;box-shadow:0 30px 90px rgba(0,0,0,.6);animation:up .3s;overflow:hidden;display:flex;flex-direction:column;max-height:calc(100vh - 70px)}
+.modal.smw{max-width:430px}
+.m-head{flex:0 0 auto;padding:22px 24px 16px;border-bottom:1px solid var(--line);position:relative;background:linear-gradient(180deg,rgba(77,163,255,.08),transparent)}
+.m-close{position:absolute;top:14px;right:14px;background:#1d2531;border:1px solid var(--line);color:var(--mut);width:32px;height:32px;border-radius:9px;cursor:pointer;font-size:13px;transition:all .15s;font-family:inherit}
+.m-close:hover{color:var(--txt);border-color:#3a4757}
+.mh-nm{font-size:19px;font-weight:800;letter-spacing:.4px;padding-right:36px}
+.mh-sub{font-size:12px;color:var(--mut);margin-top:6px;line-height:1.5;padding-right:36px}
+.m-body{flex:1 1 auto;overflow-y:auto;min-height:100px;padding:18px 24px}
+.m-foot{flex:0 0 auto;padding:13px 24px;border-top:1px solid var(--line);background:#141a24;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.flab{display:block;font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--mut);font-weight:800;margin:0 0 6px}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.formgrid .full{grid-column:1/-1}
+.aph{aspect-ratio:16/8;border:1px dashed #2c3644;border-radius:12px;background:#141a23;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .18s;overflow:hidden;position:relative}
+.aph:hover{border-color:rgba(77,163,255,.55)}
+.aph.drag{border-color:var(--acc);background:#16202c}
+.aph-in{display:flex;flex-direction:column;align-items:center;gap:5px;color:#5b6675;text-align:center;padding:6px}
+.aph-in .aph-ic{font-size:26px;opacity:.75}
+.aph-in b{color:#8b95a7;font-size:12.5px}
+.aph-in span{font-size:10.5px}
+.aph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+
+/* ── тосты ── */
+#troot{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:700;display:flex;flex-direction:column;gap:8px}
+.toast{background:#1c2531;border:1px solid #32435c;border-left:3px solid var(--acc);padding:12px 16px;border-radius:12px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.45);animation:up .3s;max-width:360px;transition:opacity .35s,transform .35s}
+.toast.warn{border-left-color:var(--red)}
+.toast.out{opacity:0;transform:translateY(8px)}
+
+/* ============ МОБИЛЬНАЯ АДАПТАЦИЯ ============ */
+@media(max-width:760px){
+body{font-size:13.5px}
+#topbar{height:54px;padding:0 12px}
+.logo-ic{width:30px;height:30px;flex-basis:30px;font-size:15px}
+.tb-title{font-size:11px;letter-spacing:1px}
+.sync span{display:none}
+.adbadge{padding:6px 10px;font-size:10.5px}
+#content{padding:14px 12px 40px}
+.ph{flex-direction:column;gap:12px}
+h1{font-size:20px}
+.ph-sub{font-size:11.5px}
+.ph-actions{width:100%;display:grid;grid-template-columns:1fr;gap:10px}
+.tabs{padding:4px}
+.tab{flex:1;padding:11px 6px;font-size:12px;text-align:center}
+.btn.big{width:100%;padding:14px}
+.cats{gap:8px;margin:12px 0 10px}
+.cat{flex:1 1 100%;padding:14px 16px;font-size:13px;justify-content:center}
+.chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;margin:10px 0 8px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;white-space:nowrap}
+.ctl .inp{width:100%}
+.vgrid{grid-template-columns:repeat(2,1fr);gap:10px}
+.vcard{border-radius:14px}
+.vcard::before{height:3px}
+.vph{aspect-ratio:16/11}
+.vph-empty{inset:8px}
+.vph-empty span{display:none}
+.vph-empty b{font-size:11px}
+.vtool{width:32px;height:32px;font-size:13px}
+.vbody{padding:9px 10px 11px}
+.vname{font-size:12.5px}
+.vdesc{font-size:10.5px;line-height:1.45}
+.vsp b{font-size:12.5px}
+.vsp{margin-top:8px;padding-top:7px}
+.back{padding:10px;align-items:stretch}
+.modal{max-height:calc(100vh - 20px);border-radius:16px}
+.m-head{padding:16px 16px 12px}
+.mh-nm{font-size:16px}
+.m-body{padding:14px 16px}
+.m-foot{padding:12px 16px}
+.m-foot .btn{flex:1;padding:13px}
+.formgrid{grid-template-columns:1fr}
+#lb{padding:12px}
+#lb img{max-width:96vw;max-height:78vh;border-radius:12px}
+.lb-cap{top:12px;left:12px;right:12px;max-width:none;font-size:12px;padding:8px 12px;border-radius:10px}
+#troot{right:10px;left:10px;bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+.toast{max-width:none}
+}
+@media(max-width:360px){.vgrid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="errbox"></div>
+<script>
+window.addEventListener('error',function(ev){
+ var b=document.getElementById('errbox');
+ if(b){b.style.display='block';b.textContent='Ошибка: '+(ev.message||'неизвестная')+' — проверьте, что файл скопирован целиком';}
+},true);
+</script>
+
+<header id="topbar">
+  <div class="tb-left">
+    <div class="logo-ic" id="logoIc">🚔</div>
+    <div class="tb-title" id="tbTitle">МВД · АВТОПАРК</div>
+  </div>
+  <div class="tb-right">
+    <div class="sync" id="sync"><i></i><span id="syncTxt">Локально</span></div>
+    <div id="adminZone"></div>
+  </div>
+</header>
+
+<main id="content">
+  <div class="ph">
+    <div>
+      <h1><span id="hTitle">Автопарк</span><span class="cnt" id="cnt">0</span></h1>
+      <div class="ph-sub" id="hSub"></div>
+    </div>
+    <div class="ph-actions">
+      <div class="tabs">
+        <button class="tab on" data-kind="cars" onclick="setKind('cars')">🚔 Автопарк</button>
+        <button class="tab" data-kind="form" onclick="setKind('form')">🎽 Форма</button>
+      </div>
+      <button class="btn big" id="addBtn" onclick="openAdd()">＋ Добавить машину</button>
+    </div>
+  </div>
+
+  <div class="cats" id="cats"></div>
+  <div class="chips" id="chips"></div>
+
+  <div class="ctl">
+    <input class="inp" id="q" placeholder="🔍 Поиск по названию или описанию…">
+  </div>
+
+  <div class="vgrid" id="vgrid"></div>
+  <div class="empty" id="vempty" style="display:none"></div>
+</main>
+
+<input type="file" id="fileInp" accept="image/*" style="display:none">
+
+<div id="lb"><div class="lb-cap" id="lbCap"></div><img id="lbImg" alt=""></div>
+<div id="mroot"></div>
+<div id="croot"></div>
+<div id="troot"></div>
+
+<script>
+/* ================================================================
+   НАСТРОЙКА (см. инструкцию):
+   вставьте сюда URL вашей Firebase Realtime Database, например
+   'https://mvd-garage-default-rtdb.firebaseio.com'
+   Пока поле пустое — сайт работает в демо-режиме (localStorage).
+   ================================================================ */
+var CONFIG={ DB_URL:'' };
+
+/* ============ УТИЛИТЫ ============ */
+function $(s){return document.querySelector(s)}
+function qsa(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}
+function hex2rgba(h,a){var r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return 'rgba('+r+','+g+','+b+','+a+')'}
+function toast(msg,warn){var t=document.createElement('div');t.className='toast'+(warn?' warn':'');t.textContent=msg;$('#troot').appendChild(t);setTimeout(function(){t.classList.add('out')},2800);setTimeout(function(){t.remove()},3300)}
+
+/* ============ БЕЗОПАСНОЕ ХРАНИЛИЩЕ ============
+   В песочнице (sandbox без allow-same-origin) обращение к localStorage
+   бросает SecurityError. Тогда работаем в памяти — сайт продолжает
+   работать, просто данные не сохраняются между перезагрузками. */
+var MEMSTORE={};
+var store=(function(){
+ var ok=false;
+ try{
+  var t='__probe__';
+  window.localStorage.setItem(t,'1');
+  window.localStorage.removeItem(t);
+  ok=true;
+ }catch(e){ ok=false }
+ return {
+  ok:ok,
+  get:function(k){
+   if(ok){ try{ return window.localStorage.getItem(k) }catch(e){ ok=false } }
+   return Object.prototype.hasOwnProperty.call(MEMSTORE,k)?MEMSTORE[k]:null;
+  },
+  set:function(k,v){
+   v=String(v);
+   if(ok){ try{ window.localStorage.setItem(k,v); return }catch(e){ ok=false } }
+   MEMSTORE[k]=v;
+  },
+  del:function(k){
+   if(ok){ try{ window.localStorage.removeItem(k); return }catch(e){ ok=false } }
+   delete MEMSTORE[k];
+  }
+ };
+})();
+
+/* ============ ВЕДОМСТВА ============ */
+var DEPS=[
+ {k:'uvd',  s:'УМВД',        n:'УМВД',                 c:'#4da3ff', cat:'main'},
+ {k:'gibdd',s:'ОГИБДД',      n:'ОГИБДД',               c:'#56ccff', cat:'main'},
+ {k:'cgb',  s:'ЦГБ/ОКБ',     n:'ЦГБ/ОКБ',              c:'#ff5c5c', cat:'main'},
+ {k:'vs',   s:'ВС РФ',       n:'ВС РФ',                c:'#2fd97a', cat:'main'},
+ {k:'rzd',  s:'РЖД',         n:'РЖД',                  c:'#ff9a3d', cat:'main'},
+ {k:'fsb',  s:'ФСБ',         n:'ФСБ',                  c:'#818cf8', cat:'event'},
+ {k:'sk',   s:'СК',          n:'Следственный комитет', c:'#e05c82', cat:'event'},
+ {k:'prok', s:'Прокуратура', n:'Прокуратура',          c:'#f7c948', cat:'event'},
+ {k:'mchs', s:'МЧС',         n:'МЧС',                  c:'#ff8a52', cat:'event'},
+ {k:'fso',  s:'ФСО',         n:'ФСО',                  c:'#c084fc', cat:'event'}
+];
+function dep(k){for(var i=0;i<DEPS.length;i++){if(DEPS[i].k===k){return DEPS[i]}}return DEPS[0]}
+
+var CATS={
+ cars:[
+  {k:'main', ic:'🏛️', n:'Основной автопарк фракции'},
+  {k:'event',ic:'🎪', n:'Автопарк для мероприятий'}
+ ],
+ form:[
+  {k:'main', ic:'🏛️', n:'Основная форма'},
+  {k:'event',ic:'🎪', n:'Форма для мероприятий'}
+ ]
+};
+function catName(kind,cat){var a=CATS[kind];for(var i=0;i<a.length;i++){if(a[i].k===cat){return a[i].n}}return a[0].n}
+
+/* ============ ДАННЫЕ / СИДЕЫ ============ */
+var LOCAL_K='mvd_garage_local', CACHE_K='mvd_garage_cache', KEY_K='mvd_garage_admin_key';
+var ITEMS, localRev=0, lastPushedRev=null, pendingRev=null, needSeed=false;
+var ADMIN_KEY=store.get(KEY_K)||'';
+var adminMode=false;
+
+function seed(){return [
+ {id:'c1', kind:'cars',cat:'main', dep:'uvd',  name:'Lada Vesta',                desc:'Патрульный автомобиль ППС · базовая комплектация', speed:'178', photo:''},
+ {id:'c2', kind:'cars',cat:'main', dep:'uvd',  name:'УАЗ Патриот',               desc:'Автомобиль руководящего состава УМВД',             speed:'140', photo:''},
+ {id:'c3', kind:'cars',cat:'main', dep:'uvd',  name:'ГАЗель Next',               desc:'Спецтранспорт для перевозки группы задержания',    speed:'120', photo:''},
+ {id:'c4', kind:'cars',cat:'main', dep:'gibdd',name:'Lada Priora',               desc:'Патрульный автомобиль ДПС · с маячками',           speed:'183', photo:''},
+ {id:'c5', kind:'cars',cat:'main', dep:'gibdd',name:'Kia Rio',                   desc:'Автомобиль дорожно-патрульной службы',             speed:'180', photo:''},
+ {id:'c6', kind:'cars',cat:'main', dep:'gibdd',name:'Skoda Octavia',             desc:'Оперативный автомобиль ДПС',                       speed:'190', photo:''},
+ {id:'c7', kind:'cars',cat:'main', dep:'cgb',  name:'ГАЗель Next · Реанимобиль', desc:'Класс C · оборудование интенсивной терапии',       speed:'120', photo:''},
+ {id:'c8', kind:'cars',cat:'main', dep:'cgb',  name:'Ford Transit · Скорая',     desc:'Санитарный автомобиль ЦГБ',                        speed:'140', photo:''},
+ {id:'c9', kind:'cars',cat:'main', dep:'vs',   name:'УАЗ Хантер',                desc:'Патрульный автомобиль комендатуры',                speed:'120', photo:''},
+ {id:'c10',kind:'cars',cat:'main', dep:'vs',   name:'КАМАЗ-43118',               desc:'Грузовой автомобиль обеспечения',                  speed:'90',  photo:''},
+ {id:'c11',kind:'cars',cat:'main', dep:'rzd',  name:'УАЗ Патриот',               desc:'Машина сопровождения и охраны объектов РЖД',       speed:'140', photo:''},
+ {id:'c12',kind:'cars',cat:'main', dep:'rzd',  name:'Ford Transit',              desc:'Транспорт ведомственной службы',                   speed:'135', photo:''},
+ {id:'c13',kind:'cars',cat:'event',dep:'fsb',  name:'Toyota Camry',              desc:'Служебный автомобиль оперативной группы',          speed:'210', photo:''},
+ {id:'c14',kind:'cars',cat:'event',dep:'fsb',  name:'Volkswagen Passat',         desc:'Немаркированный оперативный автомобиль',           speed:'205', photo:''},
+ {id:'c15',kind:'cars',cat:'event',dep:'sk',   name:'Hyundai Solaris',           desc:'Автомобиль следственной группы',                   speed:'185', photo:''},
+ {id:'c16',kind:'cars',cat:'event',dep:'prok', name:'Toyota Camry',              desc:'Служебный транспорт прокуратуры',                  speed:'210', photo:''},
+ {id:'c17',kind:'cars',cat:'event',dep:'mchs', name:'УАЗ Патриот',               desc:'Автомобиль оперативной группы МЧС',                speed:'140', photo:''},
+ {id:'c18',kind:'cars',cat:'event',dep:'mchs', name:'КАМАЗ · ПА',                desc:'Пожарный автомобиль · цистерна 8 т',               speed:'100', photo:''},
+ {id:'c19',kind:'cars',cat:'event',dep:'fso',  name:'BMW 760Li',                 desc:'Автомобиль сопровождения ФСО',                     speed:'250', photo:''},
+ {id:'c20',kind:'cars',cat:'event',dep:'fso',  name:'Aurus Senat',               desc:'Представительский автомобиль кортежа',             speed:'250', photo:''},
+ {id:'f1', kind:'form',cat:'main', dep:'uvd',  name:'Летняя повседневная форма', desc:'Светло-серая рубашка, тёмные брюки, галстук МВД',  photo:''},
+ {id:'f2', kind:'form',cat:'main', dep:'uvd',  name:'Зимняя повседневная форма', desc:'Тёмно-серое пальто, кашне, форменная фуражка',      photo:''},
+ {id:'f3', kind:'form',cat:'main', dep:'gibdd',name:'Форма инспектора ДПС',      desc:'Китель со светоотражающими полосами, жезл',        photo:''},
+ {id:'f4', kind:'form',cat:'main', dep:'cgb',  name:'Медицинская форма',         desc:'Белый халат или хирургический костюм, бейдж ЦГБ',  photo:''},
+ {id:'f5', kind:'form',cat:'main', dep:'cgb',  name:'Форма выездной бригады',    desc:'Комбинезон бригады скорой помощи',                 photo:''},
+ {id:'f6', kind:'form',cat:'main', dep:'vs',   name:'Полевая форма ВС РФ',       desc:'Камуфляж, берцы, разгрузочная система',            photo:''},
+ {id:'f7', kind:'form',cat:'main', dep:'vs',   name:'Парадная форма',            desc:'Китель, парадный ремень, фуражка',                 photo:''},
+ {id:'f8', kind:'form',cat:'main', dep:'rzd',  name:'Форменная одежда РЖД',      desc:'Тёмно-синий китель, фуражка с эмблемой',           photo:''},
+ {id:'f9', kind:'form',cat:'event',dep:'fsb',  name:'Оперативная форма ФСБ',     desc:'Чёрный костюм, тактическая разгрузка, гарнитура',  photo:''},
+ {id:'f10',kind:'form',cat:'event',dep:'sk',   name:'Костюм следователя',        desc:'Тёмный деловой костюм, нагрудный значок СК',       photo:''},
+ {id:'f11',kind:'form',cat:'event',dep:'prok', name:'Форма прокурора',           desc:'Синий китель с золотыми погонами и петлицами',     photo:''},
+ {id:'f12',kind:'form',cat:'event',dep:'mchs', name:'Сертифицированная форма МЧС',desc:'Оранжевая куртка, СИЗ, защитная каска',           photo:''},
+ {id:'f13',kind:'form',cat:'event',dep:'fso',  name:'Форма ФСО',                 desc:'Чёрный костюм, значок ФСО, проводная гарнитура',   photo:''}
+];}
+
+/* загрузка локальных данных с миграцией старых версий */
+function toArr(x){if(!x){return null}if(Array.isArray(x)){return x}var ks=Object.keys(x).sort(function(a,b){return a-b}),arr=[];for(var i=0;i<ks.length;i++){arr[+ks[i]]=x[ks[i]]}return arr}
+function loadLocal(){
+ var d=null;
+ try{ d=JSON.parse(store.get(LOCAL_K)||'null') }catch(e){}
+ if(d&&toArr(d.items)){return toArr(d.items)}
+ var map={uvd:'uvd',gibdd:'gibdd',mz:'cgb',mo:'vs',cgb:'cgb',vs:'vs',rzd:'rzd',fsb:'fsb',sk:'sk',prok:'prok',mchs:'mchs',fso:'fso'};
+ var oldKeys=['mvd_garage_v3','mvd_garage_v2','mvd_garage_v1'];
+ for(var i=0;i<oldKeys.length;i++){
+  var o=null;
+  try{ o=JSON.parse(store.get(oldKeys[i])||'null') }catch(e){}
+  if(!o){continue}
+  var ev={fsb:1,sk:1,prok:1,mchs:1},items=[];
+  if(o.items){
+   var a=toArr(o.items)||[];
+   for(var j=0;j<a.length;j++){ if(map[a[j]&&a[j].dep]){items.push(a[j])} }
+  }else if(o.cars){
+   var cs=o.cars;
+   for(var j2=0;j2<cs.length;j2++){
+    var c=cs[j2],nk=map[c.dep];
+    if(!nk){continue}
+    items.push({id:c.id,kind:'cars',cat:ev[c.dep]?'event':'main',dep:nk,name:c.name,desc:c.desc,speed:c.speed,photo:c.photo||''});
+   }
+  }
+  if(items.length){
+   saveLocal(items);
+   store.del(oldKeys[i]);
+   return items;
+  }
+ }
+ return seed();
+}
+function saveLocal(items){
+ try{ store.set(LOCAL_K,JSON.stringify({items:items})) }catch(e){ toast('Локальное хранилище переполнено',true) }
+}
+function cacheItems(){try{store.set(CACHE_K,JSON.stringify(ITEMS))}catch(e){}}
+function loadCache(){try{var c=toArr(JSON.parse(store.get(CACHE_K)||'null'));if(c&&c.length){return c}}catch(e){} return null}
+function byId(id){for(var i=0;i<ITEMS.length;i++){if(ITEMS[i].id===id){return ITEMS[i]}}return null}
+function countItems(kind,cat,dp){var n=0;for(var i=0;i<ITEMS.length;i++){var it=ITEMS[i];if(it.kind===kind&&it.cat===cat&&(dp===null||it.dep===dp)){n++}}return n}
+
+/* ============ СИНХРОНИЗАЦИЯ С FIREBASE ============ */
+function setSync(cls,txt){
+ var s=$('#sync');
+ s.className='sync '+(cls||'');
+ if(txt){$('#syncTxt').textContent=txt}
+}
+function rGet(path){
+ return fetch(CONFIG.DB_URL+'/'+path).then(function(r){if(!r.ok){throw r.status}return r.json()})
+}
+function rPut(path,val){
+ return fetch(CONFIG.DB_URL+'/'+path+'?auth='+encodeURIComponent(ADMIN_KEY),{
+  method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)
+ }).then(function(r){if(!r.ok){throw r.status}return r.json()})
+}
+
+/* единая точка фиксации изменений */
+var pushTimer=null;
+function commit(){
+ cacheItems();
+ if(!CONFIG.DB_URL){ saveLocal(ITEMS); return }
+ if(!adminMode){ return }
+ if(pushTimer){return}
+ pushTimer=setTimeout(doPush,600);
+}
+function doPush(){
+ pushTimer=null;
+ if(!adminMode||!CONFIG.DB_URL){return}
+ setSync('busy','Сохранение…');
+ var rev=(typeof localRev==='number'?localRev:0)+1;
+ pendingRev=rev;
+ rPut('items.json',ITEMS).then(function(){
+  return rPut('meta/rev.json',rev);
+ }).then(function(){
+  localRev=rev;lastPushedRev=rev;pendingRev=null;needSeed=false;
+  setSync('ok','Облако');
+ }).catch(function(){
+  pendingRev=null;setSync('err','Не сохранено');
+  toast('Не удалось сохранить изменения в облако',true);
+ });
+}
+
+/* зрительский опрос: раз в секунду проверяем версию данных */
+function startPoll(){
+ setInterval(checkRev,1000);
+ document.addEventListener('visibilitychange',function(){ if(!document.hidden){checkRev()} });
+}
+function checkRev(){
+ rGet('meta/rev.json').then(function(rev){
+  if(rev===null){setSync('ok','Облако');return}
+  if(rev===pendingRev||rev===localRev){setSync('ok','Облако');return}
+  setSync('busy','Обновление…');
+  return rGet('items.json').then(function(items){
+   var arr=toArr(items);
+   if(arr&&arr.length){ITEMS=arr;cacheItems()}
+   localRev=rev;lastPushedRev=rev;
+   render();
+   setSync('ok','Облако');
+  });
+ }).catch(function(){ setSync('err','Нет связи') });
+}
+
+/* ============ РЕЖИМ ВЛАДЕЛЬЦА ============ */
+function renderTop(){
+ $('#adminZone').innerHTML= adminMode
+  ? '<span class="adbadge">✏️ Режим редактора</span><button class="btn ghost slim" onclick="logout()">Выйти</button>'
+  : '<button class="btn ghost slim" onclick="askAdmin()">🔒 Вход</button>';
+}
+function askAdmin(){
+ if(!CONFIG.DB_URL){
+  adminMode=true;render();
+  toast('Демо-режим: изменения сохраняются только в этом браузере');
+  return;
+ }
+ $('#mroot').innerHTML=
+ '<div class="back" onclick="if(event.target===this)closeM()"><div class="modal smw">'+
+  '<div class="m-head"><div class="mh-nm" style="font-size:16px">🔒 Вход владельца</div>'+
+  '<div class="mh-sub">Введите ключ доступа (Database Secret из настроек Firebase). Он сохранится только в этом браузере.</div>'+
+  '<button class="m-close" onclick="closeM()">✕</button></div>'+
+  '<div class="m-body"><label class="flab">Ключ доступа</label>'+
+  '<input class="inp" id="fKey" type="password" style="width:100%" placeholder="Database Secret" autocomplete="off"></div>'+
+  '<div class="m-foot"><button class="btn ghost" onclick="closeM()">Отмена</button>'+
+  '<button class="btn" onclick="tryLogin()">Войти</button></div>'+
+ '</div></div>';
+ setTimeout(function(){$('#fKey').focus()},60);
+}
+function tryLogin(){
+ var key=$('#fKey').value.trim();
+ if(!key){toast('Введите ключ',true);return}
+ ADMIN_KEY=key;
+ setSync('busy','Проверка…');
+ rPut('meta/probe.json',Date.now()).then(function(){
+  store.set(KEY_K,key);
+  adminMode=true;closeM();render();
+  if(needSeed){doPush()}
+  toast('Вход выполнен — доступно редактирование');
+ }).catch(function(){
+  ADMIN_KEY='';setSync('err','Ошибка');
+  toast('Неверный ключ или нет связи',true);
+ });
+}
+function logout(){
+ ADMIN_KEY='';adminMode=false;
+ store.del(KEY_K);
+ render();
+ toast('Вы вышли из режима редактирования');
+}
+
+/* ============ СОСТОЯНИЕ / РЕНДЕР ============ */
+var state={kind:'cars',cat:'main',dep:'all',q:''};
+
+function setKind(k){
+ state.kind=k;state.cat='main';state.dep='all';state.q='';$('#q').value='';
+ qsa('.tab').forEach(function(t){t.classList.toggle('on',t.dataset.kind===k)});
+ refade();render();
+}
+function setCat(c){state.cat=c;state.dep='all';render()}
+function setDep(d){state.dep=d;renderChips();renderGrid()}
+function refade(){var c=$('#content');c.style.animation='none';void c.offsetWidth;c.style.animation=''}
+
+function renderHead(){
+ var isCars=state.kind==='cars';
+ $('#hTitle').textContent=isCars?'Автопарк':'Форма';
+ $('#hSub').textContent=isCars
+  ?'Транспортные средства · нажмите на пустое окно фото, чтобы загрузить изображение'
+  :(adminMode?'Форма одежды · нажмите на пустое окно фото, чтобы загрузить изображение':'Форма одежды ведомств');
+ $('#cnt').textContent=countItems(state.kind,state.cat,null);
+ $('#logoIc').textContent=isCars?'🚔':'🎽';
+ $('#tbTitle').textContent=isCars?'МВД · АВТОПАРК':'МВД · ФОРМА';
+ $('#addBtn').style.display=adminMode?'':'none';
+ $('#addBtn').textContent=isCars?'＋ Добавить машину':'＋ Добавить форму';
+}
+function renderCats(){
+ var a=CATS[state.kind],h='';
+ for(var i=0;i<a.length;i++){
+  var n=countItems(state.kind,a[i].k,null);
+  h+='<button class="cat'+(state.cat===a[i].k?' on':'')+'" onclick="setCat(\''+a[i].k+'\')">'+
+     '<span class="cat-ic">'+a[i].ic+'</span>'+esc(a[i].n)+(n?'<b class="cn">'+n+'</b>':'')+'</button>';
+ }
+ $('#cats').innerHTML=h;
+}
+function renderChips(){
+ var total=countItems(state.kind,state.cat,null);
+ var h='<div class="chip'+(state.dep==='all'?' on':'')+'" onclick="setDep(\'all\')"><span class="dot" style="background:#8b95a7"></span>Все<b class="cn">'+total+'</b></div>';
+ for(var i=0;i<DEPS.length;i++){
+  if(DEPS[i].cat!==state.cat){continue}
+  var n=countItems(state.kind,state.cat,DEPS[i].k);
+  h+='<div class="chip'+(state.dep===DEPS[i].k?' on':'')+'" style="--cc:'+DEPS[i].c+';--ccb:'+hex2rgba(DEPS[i].c,.16)+'" onclick="setDep(\''+DEPS[i].k+'\')">'+
+     '<span class="dot" style="background:'+DEPS[i].c+'"></span>'+esc(DEPS[i].n)+(n?'<b class="cn">'+n+'</b>':'')+'</div>';
+ }
+ $('#chips').innerHTML=h;
+}
+function cardHtml(it,i){
+ var d=dep(it.dep),A=adminMode;
+ var ph,tools='',ce='';
+ if(it.photo){
+  ph='<img src="'+it.photo+'" alt="">';
+ }else if(A){
+  ph='<div class="vph-empty"><span class="pe-ic">🖼️</span><b>Загрузить фото</b><span>клик или перетащите файл</span></div>';
+ }else{
+  ph='<div class="vph-empty plain"><span class="pe-ic">📷</span><b>Нет фото</b></div>';
+ }
+ if(A){
+  ce=' contenteditable="true" spellcheck="false"';
+  tools='<div class="vph-tools">'+
+   '<button class="vtool vtool-sw" title="Загрузить / сменить фото">↻</button>'+
+   '<button class="vtool vtool-del" title="Удалить карточку">✕</button></div>';
+ }
+ var sp=it.kind==='cars'?
+  '<div class="vsp"><span class="l">Скорость</span><b class="vnum"'+ce+' data-ph="—">'+esc(it.speed)+'</b><i>км/ч</i></div>':'';
+ return '<div class="vcard" style="--dc:'+d.c+';animation-delay:'+Math.min(i*28,340)+'ms" data-id="'+it.id+'">'+
+  '<div class="vph'+(it.photo?'':' empty')+'">'+ph+
+   '<span class="vdep" style="color:'+d.c+';border-color:'+d.c+'55;background:'+hex2rgba(d.c,.14)+'">'+esc(d.s)+'</span>'+tools+
+  '</div>'+
+  '<div class="vbody">'+
+   '<div class="vname"'+ce+' data-ph="Название">'+esc(it.name)+'</div>'+
+   '<div class="vdesc"'+ce+' data-ph="Описание…">'+esc(it.desc)+'</div>'+
+   sp+
+  '</div>'+
+ '</div>';
+}
+function renderGrid(){
+ var list=[],q=state.q.toLowerCase();
+ for(var i=0;i<ITEMS.length;i++){
+  var it=ITEMS[i];
+  if(it.kind!==state.kind||it.cat!==state.cat){continue}
+  if(state.dep!=='all'&&it.dep!==state.dep){continue}
+  if(q&&(it.name+' '+it.desc).toLowerCase().indexOf(q)<0){continue}
+  list.push(it);
+ }
+ if(!list.length){
+  $('#vgrid').innerHTML='';
+  $('#vempty').style.display='block';
+  var any=countItems(state.kind,state.cat,null);
+  $('#vempty').textContent=any
+   ?'По текущему фильтру и запросу ничего не найдено'
+   :(state.kind==='cars'?'В этой категории пока нет машин':'В этой категории пока нет формы');
+ }else{
+  $('#vempty').style.display='none';
+  $('#vgrid').innerHTML=list.map(cardHtml).join('');
+ }
+}
+function render(){renderTop();renderHead();renderCats();renderChips();renderGrid()}
+
+/* ============ ФОТО: ВЫБОР И СЖАТИЕ ============ */
+var pickMode=null, pickId=null, addPhoto=null;
+function pickPhoto(mode,id){
+ pickMode=mode;pickId=id;$('#fileInp').value='';$('#fileInp').click()}
+ $('#fileInp').addEventListener('change',function(){
+ var f=this.files[0];if(!f){return}
+ loadFile(f,pickMode,pickId);
+ this.value='';
+});
+function loadFile(f,mode,id){
+ if(!/^image\//.test(f.type)){toast('Это не изображение',true);return}
+ if(f.size>15*1024*1024){toast('Файл слишком большой (>15 МБ)',true);return}
+ var url=URL.createObjectURL(f),im=new Image();
+ im.onload=function(){
+  URL.revokeObjectURL(url);
+  var data=compress(im);
+  if(mode==='add'){addPhoto=data;setAddPrev(data)}
+  else{
+   var it=byId(id);
+   if(it){it.photo=data;commit();renderGrid();toast('Фото загружено')}
+  }
+ };
+ im.onerror=function(){URL.revokeObjectURL(url);toast('Не удалось прочитать файл',true)};
+ im.src=url;
+}
+/* сжатие по шагам: данные летят в облако и качаются всеми — держим фото компактным */
+function compress(im){
+ var steps=[[1100,.82],[900,.74],[800,.64],[700,.52]];
+ for(var i=0;i<steps.length;i++){
+  var k=Math.min(1,steps[i][0]/Math.max(im.width,im.height));
+  var c=document.createElement('canvas');
+  c.width=Math.max(1,Math.round(im.width*k));
+  c.height=Math.max(1,Math.round(im.height*k));
+  var ctx=c.getContext('2d');
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);
+  ctx.drawImage(im,0,0,c.width,c.height);
+  var data=c.toDataURL('image/jpeg',steps[i][1]);
+  if(data.length<200*1024||i===steps.length-1){return data}
+ }
+}
+
+/* ============ КЛИКИ ПО СЕТКЕ ============ */
+var vgrid=$('#vgrid');
+vgrid.addEventListener('click',function(e){
+ var t=e.target,card=t.closest('.vcard');if(!card){return}
+ var id=card.dataset.id;
+ if(!adminMode){
+  if(t.closest('.vph')&&t.tagName==='IMG'){openLB(id)} /* зритель: только просмотр фото */
+  return;
+ }
+ if(t.closest('.vtool-del')){askDel(id);return}
+ if(t.closest('.vtool-sw')){pickPhoto('item',id);return}
+ var ph=t.closest('.vph');
+ if(ph){
+  if(t.tagName==='IMG'){openLB(id)}
+  else{pickPhoto('item',id)}
+ }
+});
+
+/* сохранение отредактированного текста */
+vgrid.addEventListener('blur',function(e){
+ var t=e.target;
+ if(!adminMode||!t.isContentEditable){return}
+ var card=t.closest('.vcard');if(!card){return}
+ var it=byId(card.dataset.id);if(!it){return}
+ var val=t.innerText.replace(/\u00a0/g,' ').trim();
+ if(t.classList.contains('vname')){it.name=val}
+ else if(t.classList.contains('vdesc')){it.desc=val}
+ else if(t.classList.contains('vnum')){it.speed=val}
+ if(!t.innerText.trim()){t.innerHTML=''}
+ commit();
+},true);
+
+vgrid.addEventListener('keydown',function(e){
+ if(e.key==='Enter'&&e.target.classList&&(e.target.classList.contains('vname')||e.target.classList.contains('vnum'))){
+  e.preventDefault();e.target.blur();
+ }
+});
+vgrid.addEventListener('paste',function(e){
+ if(!e.target.isContentEditable){return}
+ e.preventDefault();
+ var t=(e.clipboardData||window.clipboardData).getData('text/plain');
+ document.execCommand('insertText',false,t);
+},true);
+
+/* drag & drop фото (только владелец) */
+vgrid.addEventListener('dragover',function(e){
+ if(!adminMode){return}
+ var ph=e.target.closest('.vph');
+ qsa('.vph.drag').forEach(function(x){x.classList.remove('drag')});
+ if(ph){e.preventDefault();ph.classList.add('drag')}
+});
+vgrid.addEventListener('drop',function(e){
+ if(!adminMode){return}
+ var ph=e.target.closest('.vph'),card=e.target.closest('.vcard');
+ qsa('.vph.drag').forEach(function(x){x.classList.remove('drag')});
+ if(ph&&card){e.preventDefault();var f=e.dataTransfer.files[0];if(f){loadFile(f,'item',card.dataset.id)}}
+});
+document.addEventListener('dragover',function(e){e.preventDefault()});
+document.addEventListener('drop',function(e){e.preventDefault()});
+
+/* поиск */
+ $('#q').addEventListener('input',function(){state.q=this.value.trim();renderGrid()});
+
+/* ============ ЛАЙТБОКС ============ */
+function openLB(id){
+ var it=byId(id);if(!it||!it.photo){return}
+ var d=dep(it.dep);
+ var sub='<i class="lbdot" style="background:'+d.c+'"></i>'+esc(d.n)+(it.kind==='cars'&&it.speed?' · '+esc(it.speed)+' км/ч':'');
+ $('#lbImg').src=it.photo;
+ $('#lbCap').innerHTML=esc(it.name||'Без названия')+'<span>'+sub+'</span>';
+ var lb=$('#lb');
+ lb.classList.add('show');
+ requestAnimationFrame(function(){requestAnimationFrame(function(){lb.classList.add('zoom')})});
+}
+function closeLB(){
+ var lb=$('#lb');
+ lb.classList.remove('zoom');
+ setTimeout(function(){lb.classList.remove('show');$('#lbImg').src=''},240);
+}
+ $('#lb').addEventListener('click',function(e){
+ if(e.target===this||e.target.id==='lbImg'){closeLB()}
+});
+
+/* ============ МОДАЛКА ДОБАВЛЕНИЯ ============ */
+function closeM(){$('#mroot').innerHTML=''}
+function setAddPrev(src){var z=$('#aphIn');if(z){z.innerHTML='<img src="'+src+'">'}}
+function fillMDeps(cat,sel){
+ var o='';
+ for(var i=0;i<DEPS.length;i++){if(DEPS[i].cat===cat){o+='<option value="'+DEPS[i].k+'">'+esc(DEPS[i].n)+'</option>'}}
+ var el=$('#fDep');el.innerHTML=o;
+ if(sel){for(var j=0;j<DEPS.length;j++){if(DEPS[j].k===sel&&DEPS[j].cat===cat){el.value=sel;break}}}
+}
+function openAdd(){
+ if(!adminMode){return}
+ addPhoto=null;
+ var isCars=state.kind==='cars';
+ var catOpts='';
+ var a=CATS[state.kind];
+ for(var i=0;i<a.length;i++){
+  catOpts+='<option value="'+a[i].k+'"'+(a[i].k===state.cat?' selected':'')+'>'+esc(a[i].n)+'</option>';
+ }
+ $('#mroot').innerHTML=
+ '<div class="back" onclick="if(event.target===this)closeM()"><div class="modal" style="max-width:580px">'+
+  '<div class="m-head"><div class="mh-nm" style="font-size:17px">'+(isCars?'Новая машина':'Новая форма')+'</div>'+
+  '<div class="mh-sub">Заполните карточку — фото можно загрузить сразу или позже, кликнув по окну в общем списке</div>'+
+  '<button class="m-close" onclick="closeM()">✕</button></div>'+
+  '<div class="m-body">'+
+   '<div class="aph" id="aph"><div class="aph-in" id="aphIn"><span class="aph-ic">🖼️</span><b>Загрузить фото</b><span>клик или перетащите файл сюда</span></div></div>'+
+   '<div class="formgrid" style="margin-top:16px">'+
+    '<div><label class="flab">Категория</label><select class="sel" id="fCat" style="width:100%" onchange="fillMDeps(this.value)">'+catOpts+'</select></div>'+
+    '<div><label class="flab">Ведомство</label><select class="sel" id="fDep" style="width:100%"></select></div>'+
+    (isCars?'<div><label class="flab">Макс. скорость, км/ч</label><input class="inp" id="fSp" style="width:100%" placeholder="напр. 180"></div>':'')+
+    '<div class="full"><label class="flab">Название</label><input class="inp" id="fName" style="width:100%" placeholder="'+(isCars?'напр. Lada Vesta · ДПС':'напр. Летняя форма')+'"></div>'+
+    '<div class="full"><label class="flab">Описание</label><textarea class="inp" id="fDesc" rows="3" style="width:100%" placeholder="'+(isCars?'Подразделение, назначение, комплектация…':'Комплектация, сезон, особенности…')+'"></textarea></div>'+
+   '</div>'+
+  '</div>'+
+  '<div class="m-foot"><button class="btn ghost" onclick="closeM()">Отмена</button>'+
+  '<button class="btn" onclick="submitAdd()">'+(isCars?'Добавить машину':'Добавить форму')+'</button></div>'+
+ '</div></div>';
+ fillMDeps(state.cat,state.dep);
+ var aph=$('#aph');
+ aph.addEventListener('click',function(e){if(e.target.tagName!=='IMG'){pickPhoto('add',null)}});
+ aph.addEventListener('dragover',function(e){e.preventDefault();aph.classList.add('drag')});
+ aph.addEventListener('dragleave',function(){aph.classList.remove('drag')});
+ aph.addEventListener('drop',function(e){
+  e.preventDefault();aph.classList.remove('drag');
+  var f=e.dataTransfer.files[0];if(f){loadFile(f,'add',null)}
+ });
+ setTimeout(function(){$('#fName').focus()},60);
+}
+function submitAdd(){
+ if(!adminMode){return}
+ var name=$('#fName').value.trim();
+ if(!name){toast(state.kind==='cars'?'Введите название машины':'Введите название формы',true);$('#fName').focus();return}
+ ITEMS.unshift({
+  id:'n'+Date.now()+Math.floor(Math.random()*999),
+  kind:state.kind,
+  cat:$('#fCat').value,
+  dep:$('#fDep').value,
+  name:name,
+  desc:$('#fDesc').value.trim(),
+  speed:state.kind==='cars'&&$('#fSp')?$('#fSp').value.trim():'',
+  photo:addPhoto||''
+ });
+ state.cat=$('#fCat').value;
+ state.dep=$('#fDep').value;
+ closeM();commit();render();
+ toast(state.kind==='cars'?'Машина добавлена: «'+name+'»':'Форма добавлена: «'+name+'»');
+}
+
+/* ============ УДАЛЕНИЕ ============ */
+function closeC(){$('#croot').innerHTML=''}
+function askDel(id){
+ if(!adminMode){return}
+ var it=byId(id);if(!it){return}
+ var d=dep(it.dep);
+ var info='<i class="lbdot" style="background:'+d.c+'"></i>'+esc(d.n)+(it.kind==='cars'&&it.speed?' · '+esc(it.speed)+' км/ч':'');
+ $('#croot').innerHTML=
+ '<div class="back" onclick="if(event.target===this)closeC()"><div class="modal smw">'+
+  '<div class="m-head"><div class="mh-nm" style="font-size:16px">Удалить карточку?</div>'+
+  '<div class="mh-sub">«'+esc(it.name||'Без названия')+'»<br>'+info+'<br>Категория: '+esc(catName(it.kind,it.cat))+'</div></div>'+
+  '<div class="m-foot" style="justify-content:flex-end"><button class="btn ghost" onclick="closeC()">Отмена</button>'+
+  '<button class="btn warn" onclick="delItem(\''+id+'\')">Удалить</button></div>'+
+ '</div></div>';
+}
+function delItem(id){
+ if(!adminMode){return}
+ for(var i=0;i<ITEMS.length;i++){if(ITEMS[i].id===id){ITEMS.splice(i,1);break}}
+ closeC();commit();render();toast('Карточка удалена');
+}
+
+/* ============ Esc ============ */
+document.addEventListener('keydown',function(e){
+ if(e.key==='Escape'){
+  if($('#lb').classList.contains('show')){closeLB()}
+  else{closeM();closeC()}
+ }
+});
+
+/* ============ СТАРТ ============ */
+ITEMS=loadLocal();
+render();
+
+if(!store.ok){
+ setTimeout(function(){
+  toast('Внимание: localStorage недоступен (песочница). Изменения не сохранятся между перезагрузками.',true);
+ },800);
+}
+
+if(CONFIG.DB_URL){
+ setSync('busy','Подключение…');
+ rGet('meta/rev.json').then(function(rev){
+  localRev=(typeof rev==='number')?rev:0;
+  lastPushedRev=localRev;
+  return rGet('items.json');
+ }).then(function(items){
+  var arr=toArr(items);
+  if(arr&&arr.length){ITEMS=arr}
+  else{needSeed=true}
+  cacheItems();render();
+  setSync('ok','Облако');
+  startPoll();
+  /* авто-восстановление сессии владельца */
+  if(ADMIN_KEY){
+   rPut('meta/probe.json',Date.now()).then(function(){
+    adminMode=true;render();
+    if(needSeed){doPush()}
+   }).catch(function(){
+    ADMIN_KEY='';store.del(KEY_K);
+   });
+  }
+ }).catch(function(){
+  var c=loadCache();
+  if(c){ITEMS=c}
+  render();setSync('err','Нет связи');
+  startPoll();
+ });
+}else{
+ setSync('','Локально');
+}
+</script>
+</body>
+</html>
