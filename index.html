@@ -274,10 +274,7 @@ var REPO=(function(){
 })();
 var BRANCH='main';
 
-/* ============ БЕЗОПАСНОЕ ХРАНИЛИЩЕ ============
-   В sandbox-iframe доступ к window.localStorage выбрасывает
-   SecurityError. Оборачиваем все обращения, а при недоступности
-   используем память процесса — ошибка больше не появится.       */
+/* ============ БЕЗОПАСНОЕ ХРАНИЛИЩЕ ============ */
 var LS=(function(){
  var mem={},ok=false;
  try{
@@ -415,15 +412,11 @@ function saveLocal(items){
  try{ LS.set(LOCAL_K,JSON.stringify({items:items})) }catch(e){ toast('Локальное хранилище переполнено',true) }
 }
 function cacheItems(){try{LS.set(CACHE_K,JSON.stringify(ITEMS))}catch(e){}}
-function loadCache(){try{var c=toArr(JSON.parse(LS.get(CACHE_K)||'null'));if(c&&c.length){return c}}catch(e){} return null}
+function loadCache(){try{var c=toArr(JSON.parse(LS.get(CACHE_K)||'null'));if(c){return c}}catch(e){} return null}
 function byId(id){for(var i=0;i<ITEMS.length;i++){if(ITEMS[i].id===id){return ITEMS[i]}}return null}
 function countItems(kind,cat,dp){var n=0;for(var i=0;i<ITEMS.length;i++){var it=ITEMS[i];if(it.kind===kind&&it.cat===cat&&(dp===null||it.dep===dp)){n++}}return n}
 
 /* ============ СИНХРОНИЗАЦИЯ ЧЕРЕЗ GITHUB ============ */
-/* Зрители читают файлы из репозитория напрямую (raw), страница каждые
-   полторы секунды проверяет крошечный файл rev.txt и при изменении
-   подтягивает data.json. Владелец записывает файлы через GitHub API
-   с персональным токеном — без токена записать ничего нельзя.       */
 function setSync(cls,txt){
  var s=$('#sync');
  s.className='sync '+(cls||'');
@@ -431,7 +424,7 @@ function setSync(cls,txt){
 }
 function rawUrl(file,br){return 'https://raw.githubusercontent.com/'+REPO+'/'+(br||BRANCH)+'/'+file+'?v='+Date.now()}
 function rawGet(file,br){
- return fetch(rawUrl(file,br)).then(function(r){
+ return fetch(rawUrl(file,br),{cache:'no-store'}).then(function(r){
   if(r.status===404){var e=new Error('404');e.nf=true;throw e}
   if(!r.ok){throw new Error(r.status)}
   return r.text();
@@ -475,32 +468,61 @@ function checkToken(tok){
   .then(function(j){ return !j.permissions||!!j.permissions.push });
 }
 
-/* единая точка фиксации изменений */
-var pushTimer=null;
+/* ============ ОЧЕРЕДЬ СОХРАНЕНИЯ (один push за раз) ============
+   Раньше несколько быстрых правок запускали ПАРАЛЛЕЛЬНЫЕ сохранения,
+   которые перезаписывали друг друга, а страница могла подтянуть с
+   сервера устаревшую копию и "вернуть" удалённую карточку.
+   Теперь: push-ы строго по очереди; правки, сделанные во время
+   сохранения, уходят следующим; откат на старую версию данных
+   запрещён; упавшее сохранение повторяется автоматически.        */
+var pushTimer=null, pushInFlight=false, dataDirty=false, pushRetries=0, pushToastShown=false;
+
 function commit(){
  cacheItems();
  if(!REPO){ saveLocal(ITEMS); return }
  if(!adminMode){ return }
- if(pushTimer){return}
- pushTimer=setTimeout(doPush,700);
+ dataDirty=true;              /* есть несохранённые правки */
+ if(pushInFlight){ return }   /* сохранение уже идёт — правки уйдут следующим */
+ if(pushTimer){ return }
+ pushTimer=setTimeout(doPush,600);
 }
+
 function doPush(){
  pushTimer=null;
- if(!adminMode||!REPO){return}
+ if(!adminMode||!REPO||pushInFlight||!dataDirty){ return }
+ /* фиксируем снимок данных на этот момент */
+ var snapshot=JSON.stringify({items:ITEMS});
+ dataDirty=false;             /* правки ПОСЛЕ этой строки снова поднимут флаг */
+ needSeed=false;
+ pushInFlight=true;
  setSync('busy','Сохранение…');
  var rev=(typeof localRev==='number'?localRev:0)+1;
  pendingRev=rev;
  putFiles([
-  {path:'data.json',content:JSON.stringify({items:ITEMS})},
+  {path:'data.json',content:snapshot},
   {path:'rev.txt',content:String(rev)}
  ],'sync: обновление данных ('+rev+')').then(function(){
-  localRev=rev;lastPushedRev=rev;pendingRev=null;needSeed=false;
+  pushInFlight=false;pushRetries=0;pushToastShown=false;
+  localRev=rev;lastPushedRev=rev;pendingRev=null;
   setSync('ok','GitHub');
+  /* за время сохранения накопились новые правки — отправляем их */
+  if(dataDirty){ pushTimer=setTimeout(doPush,400) }
  }).catch(function(code){
-  pendingRev=null;setSync('err','Не сохранено');
-  if(code===401){toast('Токен недействителен — войдите заново через 🔒',true)}
-  else if(code===403){toast('GitHub отклонил запись (проверьте токен и лимиты)',true)}
-  else{toast('Не удалось сохранить данные на GitHub',true)}
+  pushInFlight=false;
+  pendingRev=null;
+  dataDirty=true;             /* не сохранилось — держим и повторим */
+  if(code===401){
+   setSync('err','Токен недействителен');
+   toast('Токен недействителен — войдите заново через 🔒',true);
+   return;                    /* без автоповтора */
+  }
+  if(code===422&&pushRetries<3){ /* ветку подвинули — сразу пробуем заново */
+   pushRetries++;pushTimer=setTimeout(doPush,800);return;
+  }
+  setSync('err','Не сохранено');
+  if(!pushToastShown){ pushToastShown=true; toast('Не удалось сохранить — повторю автоматически',true) }
+  pushRetries++;
+  pushTimer=setTimeout(doPush,8000);
  });
 }
 
@@ -512,18 +534,21 @@ function startPoll(){
 function checkRev(){
  rawGet('rev.txt').then(function(t){
   var rev=parseInt(t,10)||0;
-  if(rev===pendingRev||rev===localRev){setSync('ok','GitHub');return}
+  if(rev<localRev){ return }                       /* устаревший ответ — откат данных запрещён */
+  if(rev===pendingRev){ setSync('ok','GitHub'); return }
+  if(rev===localRev){ setSync('ok','GitHub'); return }
+  if(adminMode&&(dataDirty||pushInFlight)){ return } /* есть свои несохранённые правки — сначала сохраним их */
   setSync('busy','Обновление…');
   return rawGet('data.json').then(function(d){
    var arr=null;
-   try{ arr=toArr(JSON.parse(d).items) }catch(e){}
-   if(arr&&arr.length){ITEMS=arr;cacheItems()}
-   localRev=rev;lastPushedRev=rev;
+   try{ arr=toArr(JSON.parse(d).items) }catch(e){ arr=null }
+   if(arr){ ITEMS=arr; cacheItems() }               /* пустой список — тоже валидное состояние */
+   localRev=rev; lastPushedRev=rev;
    render();
    setSync('ok','GitHub');
   });
  }).catch(function(e){
-  if(e&&e.nf){setSync('ok','GitHub');return} /* данных ещё нет — ждём владельца */
+  if(e&&e.nf){ setSync('ok','GitHub'); return } /* данных ещё нет — ждём владельца */
   setSync('err','Нет связи');
  });
 }
@@ -532,10 +557,15 @@ function checkRev(){
 function loadState(br){
  return rawGet('rev.txt',br).then(function(t){
   return rawGet('data.json',br).then(function(d){
-   return {branch:br,rev:parseInt(t,10)||0,items:toArr(JSON.parse(d).items)||[]};
+   var arr=null;
+   try{ arr=toArr(JSON.parse(d).items) }catch(e){}
+   return {branch:br,rev:parseInt(t,10)||0,items:(arr===null?null:(arr.length?arr:[]))};
+  },function(e2){
+   if(e2.nf){ return {branch:br,rev:parseInt(t,10)||0,items:null} }
+   throw e2;
   });
  },function(e){
-  if(e.nf){return {branch:br,rev:0,items:null}}
+  if(e.nf){ return {branch:br,rev:0,items:null} }
   throw e;
  });
 }
@@ -544,13 +574,13 @@ function initRemote(){
  loadState('main').then(function(st){
   if(st.items===null){
    return loadState('master').then(function(st2){
-    return (st2.items&&st2.items.length)?st2:st;
+    return (st2.items!==null)?st2:st;
    },function(){return st});
   }
   return st;
  }).then(function(st){
   BRANCH=st.branch;
-  if(st.items&&st.items.length){
+  if(st.items){                    /* массив, в т.ч. пустой — актуальное состояние */
    ITEMS=st.items;cacheItems();localRev=st.rev;lastPushedRev=st.rev;needSeed=false;
   }else{
    needSeed=true;
@@ -572,8 +602,11 @@ function renderTop(){
 function restoreSession(){
  if(!ADMIN_KEY||!REPO){return}
  checkToken(ADMIN_KEY).then(function(ok){
-  if(ok){adminMode=true;render();if(needSeed){doPush()}}
-  else{ADMIN_KEY='';LS.remove(KEY_K)}
+  if(ok){
+   adminMode=true;render();
+   if(needSeed||dataDirty){ dataDirty=true;doPush() }
+  }
+  else{ ADMIN_KEY='';LS.remove(KEY_K) }
  }).catch(function(){});
 }
 function askAdmin(){
@@ -604,7 +637,7 @@ function tryLogin(){
   ADMIN_KEY=tok;
   LS.set(KEY_K,tok);
   adminMode=true;closeM();render();
-  if(needSeed){doPush()}
+  if(needSeed||dataDirty){ dataDirty=true;doPush() }
   toast('Вход выполнен — доступно редактирование');
  }).catch(function(code){
   setSync('err','Ошибка');
@@ -615,6 +648,8 @@ function tryLogin(){
 function logout(){
  ADMIN_KEY='';adminMode=false;
  LS.remove(KEY_K);
+ clearTimeout(pushTimer);pushTimer=null;
+ dataDirty=false;pushInFlight=false;pendingRev=null;
  render();
  toast('Вы вышли из режима редактирования');
 }
