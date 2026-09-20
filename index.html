@@ -146,6 +146,7 @@ textarea.inp{resize:vertical}
 .aph-in b{color:#8b95a7;font-size:12.5px}
 .aph-in span{font-size:10.5px}
 .aph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hint{font-size:11.5px;color:var(--mut);line-height:1.6;margin-top:10px;background:#141a23;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 
 /* ── тосты ── */
 #troot{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:700;display:flex;flex-direction:column;gap:8px}
@@ -177,7 +178,6 @@ h1{font-size:20px}
 .ctl .inp{width:100%}
 .vgrid{grid-template-columns:repeat(2,1fr);gap:10px}
 .vcard{border-radius:14px}
-.vcard::before{height:3px}
 .vph{aspect-ratio:16/11}
 .vph-empty{inset:8px}
 .vph-empty span{display:none}
@@ -261,12 +261,47 @@ window.addEventListener('error',function(ev){
 
 <script>
 /* ================================================================
-   НАСТРОЙКА (см. инструкцию):
-   вставьте сюда URL вашей Firebase Realtime Database, например
-   'https://mvd-garage-default-rtdb.firebaseio.com'
-   Пока поле пустое — сайт работает в демо-режиме (localStorage).
+   Репозиторий определяется АВТОМАТИЧЕСКИ по адресу сайта
+   (https://ваш_ник.github.io/имя_репо/). Править здесь ничего не нужно.
+   Открытый с диска файл работает в демо-режиме (localStorage).
    ================================================================ */
-var CONFIG={ DB_URL:'' };
+var REPO=(function(){
+ var h=location.hostname,p=location.pathname;
+ if(!/\.github\.io$/.test(h)){return null}
+ var owner=h.replace(/\.github\.io$/,'');
+ var seg=p.split('/').filter(Boolean);
+ return owner+'/'+(seg.length?seg[0]:(owner+'.github.io'));
+})();
+var BRANCH='main';
+
+/* ============ БЕЗОПАСНОЕ ХРАНИЛИЩЕ ============
+   В sandbox-iframe доступ к window.localStorage выбрасывает
+   SecurityError. Оборачиваем все обращения, а при недоступности
+   используем память процесса — ошибка больше не появится.       */
+var LS=(function(){
+ var mem={},ok=false;
+ try{
+  var t='__ls_test__';
+  window.localStorage.setItem(t,'1');
+  window.localStorage.removeItem(t);
+  ok=true;
+ }catch(e){ok=false}
+ return {
+  get:function(k){
+   if(ok){try{return window.localStorage.getItem(k)}catch(e){}}
+   return Object.prototype.hasOwnProperty.call(mem,k)?mem[k]:null;
+  },
+  set:function(k,v){
+   v=String(v);
+   if(ok){try{window.localStorage.setItem(k,v);return}catch(e){}}
+   mem[k]=v;
+  },
+  remove:function(k){
+   if(ok){try{window.localStorage.removeItem(k);return}catch(e){}}
+   delete mem[k];
+  }
+ };
+})();
 
 /* ============ УТИЛИТЫ ============ */
 function $(s){return document.querySelector(s)}
@@ -274,37 +309,7 @@ function qsa(s,r){return Array.prototype.slice.call((r||document).querySelectorA
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}
 function hex2rgba(h,a){var r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return 'rgba('+r+','+g+','+b+','+a+')'}
 function toast(msg,warn){var t=document.createElement('div');t.className='toast'+(warn?' warn':'');t.textContent=msg;$('#troot').appendChild(t);setTimeout(function(){t.classList.add('out')},2800);setTimeout(function(){t.remove()},3300)}
-
-/* ============ БЕЗОПАСНОЕ ХРАНИЛИЩЕ ============
-   В песочнице (sandbox без allow-same-origin) обращение к localStorage
-   бросает SecurityError. Тогда работаем в памяти — сайт продолжает
-   работать, просто данные не сохраняются между перезагрузками. */
-var MEMSTORE={};
-var store=(function(){
- var ok=false;
- try{
-  var t='__probe__';
-  window.localStorage.setItem(t,'1');
-  window.localStorage.removeItem(t);
-  ok=true;
- }catch(e){ ok=false }
- return {
-  ok:ok,
-  get:function(k){
-   if(ok){ try{ return window.localStorage.getItem(k) }catch(e){ ok=false } }
-   return Object.prototype.hasOwnProperty.call(MEMSTORE,k)?MEMSTORE[k]:null;
-  },
-  set:function(k,v){
-   v=String(v);
-   if(ok){ try{ window.localStorage.setItem(k,v); return }catch(e){ ok=false } }
-   MEMSTORE[k]=v;
-  },
-  del:function(k){
-   if(ok){ try{ window.localStorage.removeItem(k); return }catch(e){ ok=false } }
-   delete MEMSTORE[k];
-  }
- };
-})();
+function b64e(s){return btoa(unescape(encodeURIComponent(s)))}
 
 /* ============ ВЕДОМСТВА ============ */
 var DEPS=[
@@ -333,10 +338,10 @@ var CATS={
 };
 function catName(kind,cat){var a=CATS[kind];for(var i=0;i<a.length;i++){if(a[i].k===cat){return a[i].n}}return a[0].n}
 
-/* ============ ДАННЫЕ / СИДЕЫ ============ */
+/* ============ ДАННЫЕ / СИДЫ ============ */
 var LOCAL_K='mvd_garage_local', CACHE_K='mvd_garage_cache', KEY_K='mvd_garage_admin_key';
 var ITEMS, localRev=0, lastPushedRev=null, pendingRev=null, needSeed=false;
-var ADMIN_KEY=store.get(KEY_K)||'';
+var ADMIN_KEY=LS.get(KEY_K)||'';
 var adminMode=false;
 
 function seed(){return [
@@ -375,17 +380,16 @@ function seed(){return [
  {id:'f13',kind:'form',cat:'event',dep:'fso',  name:'Форма ФСО',                 desc:'Чёрный костюм, значок ФСО, проводная гарнитура',   photo:''}
 ];}
 
-/* загрузка локальных данных с миграцией старых версий */
 function toArr(x){if(!x){return null}if(Array.isArray(x)){return x}var ks=Object.keys(x).sort(function(a,b){return a-b}),arr=[];for(var i=0;i<ks.length;i++){arr[+ks[i]]=x[ks[i]]}return arr}
 function loadLocal(){
  var d=null;
- try{ d=JSON.parse(store.get(LOCAL_K)||'null') }catch(e){}
+ try{ d=JSON.parse(LS.get(LOCAL_K)||'null') }catch(e){}
  if(d&&toArr(d.items)){return toArr(d.items)}
  var map={uvd:'uvd',gibdd:'gibdd',mz:'cgb',mo:'vs',cgb:'cgb',vs:'vs',rzd:'rzd',fsb:'fsb',sk:'sk',prok:'prok',mchs:'mchs',fso:'fso'};
  var oldKeys=['mvd_garage_v3','mvd_garage_v2','mvd_garage_v1'];
  for(var i=0;i<oldKeys.length;i++){
   var o=null;
-  try{ o=JSON.parse(store.get(oldKeys[i])||'null') }catch(e){}
+  try{ o=JSON.parse(LS.get(oldKeys[i])||'null') }catch(e){}
   if(!o){continue}
   var ev={fsb:1,sk:1,prok:1,mchs:1},items=[];
   if(o.items){
@@ -401,79 +405,162 @@ function loadLocal(){
   }
   if(items.length){
    saveLocal(items);
-   store.del(oldKeys[i]);
+   LS.remove(oldKeys[i]);
    return items;
   }
  }
  return seed();
 }
 function saveLocal(items){
- try{ store.set(LOCAL_K,JSON.stringify({items:items})) }catch(e){ toast('Локальное хранилище переполнено',true) }
+ try{ LS.set(LOCAL_K,JSON.stringify({items:items})) }catch(e){ toast('Локальное хранилище переполнено',true) }
 }
-function cacheItems(){try{store.set(CACHE_K,JSON.stringify(ITEMS))}catch(e){}}
-function loadCache(){try{var c=toArr(JSON.parse(store.get(CACHE_K)||'null'));if(c&&c.length){return c}}catch(e){} return null}
+function cacheItems(){try{LS.set(CACHE_K,JSON.stringify(ITEMS))}catch(e){}}
+function loadCache(){try{var c=toArr(JSON.parse(LS.get(CACHE_K)||'null'));if(c&&c.length){return c}}catch(e){} return null}
 function byId(id){for(var i=0;i<ITEMS.length;i++){if(ITEMS[i].id===id){return ITEMS[i]}}return null}
 function countItems(kind,cat,dp){var n=0;for(var i=0;i<ITEMS.length;i++){var it=ITEMS[i];if(it.kind===kind&&it.cat===cat&&(dp===null||it.dep===dp)){n++}}return n}
 
-/* ============ СИНХРОНИЗАЦИЯ С FIREBASE ============ */
+/* ============ СИНХРОНИЗАЦИЯ ЧЕРЕЗ GITHUB ============ */
+/* Зрители читают файлы из репозитория напрямую (raw), страница каждые
+   полторы секунды проверяет крошечный файл rev.txt и при изменении
+   подтягивает data.json. Владелец записывает файлы через GitHub API
+   с персональным токеном — без токена записать ничего нельзя.       */
 function setSync(cls,txt){
  var s=$('#sync');
  s.className='sync '+(cls||'');
  if(txt){$('#syncTxt').textContent=txt}
 }
-function rGet(path){
- return fetch(CONFIG.DB_URL+'/'+path).then(function(r){if(!r.ok){throw r.status}return r.json()})
+function rawUrl(file,br){return 'https://raw.githubusercontent.com/'+REPO+'/'+(br||BRANCH)+'/'+file+'?v='+Date.now()}
+function rawGet(file,br){
+ return fetch(rawUrl(file,br)).then(function(r){
+  if(r.status===404){var e=new Error('404');e.nf=true;throw e}
+  if(!r.ok){throw new Error(r.status)}
+  return r.text();
+ });
 }
-function rPut(path,val){
- return fetch(CONFIG.DB_URL+'/'+path+'?auth='+encodeURIComponent(ADMIN_KEY),{
-  method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)
- }).then(function(r){if(!r.ok){throw r.status}return r.json()})
+function ghHeaders(){return {Authorization:'token '+ADMIN_KEY,Accept:'application/vnd.github+json','Content-Type':'application/json'}}
+function ghReq(method,path,body){
+ return fetch('https://api.github.com/repos/'+REPO+'/'+path,{
+  method:method,headers:ghHeaders(),
+  body:body?JSON.stringify(body):undefined
+ }).then(function(r){
+  if(!r.ok){throw r.status}
+  return r.status===204?null:r.json();
+ });
+}
+/* запись нескольких файлов одним коммитом через Git Data API */
+function putFiles(files,message){
+ var blobs=files.map(function(f){
+  return ghReq('POST','git/blobs',{content:b64e(f.content),encoding:'base64'}).then(function(b){
+   return {path:f.path,mode:'100644',type:'blob',sha:b.sha};
+  });
+ });
+ return Promise.all(blobs).then(function(tree){
+  return ghReq('GET','git/refs/heads/'+BRANCH).then(function(ref){
+   var commitSha=ref.object.sha;
+   return ghReq('GET','git/commits/'+commitSha).then(function(cm){
+    return ghReq('POST','git/trees',{base_tree:cm.tree.sha,tree:tree}).then(function(newTree){
+     return ghReq('POST','git/commits',{message:message,tree:newTree.sha,parents:[commitSha]}).then(function(nc){
+      return ghReq('PATCH','git/refs/heads/'+BRANCH,{sha:nc.sha});
+     });
+    });
+   });
+  });
+ });
+}
+/* проверка токена: действителен + есть право записи в этот репозиторий */
+function checkToken(tok){
+ return fetch('https://api.github.com/user',{headers:{Authorization:'token '+tok}})
+  .then(function(r){ if(!r.ok){throw r.status} return fetch('https://api.github.com/repos/'+REPO,{headers:{Authorization:'token '+tok}}) })
+  .then(function(r){ if(!r.ok){throw r.status} return r.json() })
+  .then(function(j){ return !j.permissions||!!j.permissions.push });
 }
 
 /* единая точка фиксации изменений */
 var pushTimer=null;
 function commit(){
  cacheItems();
- if(!CONFIG.DB_URL){ saveLocal(ITEMS); return }
+ if(!REPO){ saveLocal(ITEMS); return }
  if(!adminMode){ return }
  if(pushTimer){return}
- pushTimer=setTimeout(doPush,600);
+ pushTimer=setTimeout(doPush,700);
 }
 function doPush(){
  pushTimer=null;
- if(!adminMode||!CONFIG.DB_URL){return}
+ if(!adminMode||!REPO){return}
  setSync('busy','Сохранение…');
  var rev=(typeof localRev==='number'?localRev:0)+1;
  pendingRev=rev;
- rPut('items.json',ITEMS).then(function(){
-  return rPut('meta/rev.json',rev);
- }).then(function(){
+ putFiles([
+  {path:'data.json',content:JSON.stringify({items:ITEMS})},
+  {path:'rev.txt',content:String(rev)}
+ ],'sync: обновление данных ('+rev+')').then(function(){
   localRev=rev;lastPushedRev=rev;pendingRev=null;needSeed=false;
-  setSync('ok','Облако');
- }).catch(function(){
+  setSync('ok','GitHub');
+ }).catch(function(code){
   pendingRev=null;setSync('err','Не сохранено');
-  toast('Не удалось сохранить изменения в облако',true);
+  if(code===401){toast('Токен недействителен — войдите заново через 🔒',true)}
+  else if(code===403){toast('GitHub отклонил запись (проверьте токен и лимиты)',true)}
+  else{toast('Не удалось сохранить данные на GitHub',true)}
  });
 }
 
-/* зрительский опрос: раз в секунду проверяем версию данных */
+/* зрительский опрос: раз в ~1.5 сек проверяем версию */
 function startPoll(){
- setInterval(checkRev,1000);
+ setInterval(checkRev,1500);
  document.addEventListener('visibilitychange',function(){ if(!document.hidden){checkRev()} });
 }
 function checkRev(){
- rGet('meta/rev.json').then(function(rev){
-  if(rev===null){setSync('ok','Облако');return}
-  if(rev===pendingRev||rev===localRev){setSync('ok','Облако');return}
+ rawGet('rev.txt').then(function(t){
+  var rev=parseInt(t,10)||0;
+  if(rev===pendingRev||rev===localRev){setSync('ok','GitHub');return}
   setSync('busy','Обновление…');
-  return rGet('items.json').then(function(items){
-   var arr=toArr(items);
+  return rawGet('data.json').then(function(d){
+   var arr=null;
+   try{ arr=toArr(JSON.parse(d).items) }catch(e){}
    if(arr&&arr.length){ITEMS=arr;cacheItems()}
    localRev=rev;lastPushedRev=rev;
    render();
-   setSync('ok','Облако');
+   setSync('ok','GitHub');
   });
- }).catch(function(){ setSync('err','Нет связи') });
+ }).catch(function(e){
+  if(e&&e.nf){setSync('ok','GitHub');return} /* данных ещё нет — ждём владельца */
+  setSync('err','Нет связи');
+ });
+}
+
+/* подключение при загрузке страницы */
+function loadState(br){
+ return rawGet('rev.txt',br).then(function(t){
+  return rawGet('data.json',br).then(function(d){
+   return {branch:br,rev:parseInt(t,10)||0,items:toArr(JSON.parse(d).items)||[]};
+  });
+ },function(e){
+  if(e.nf){return {branch:br,rev:0,items:null}}
+  throw e;
+ });
+}
+function initRemote(){
+ setSync('busy','Подключение…');
+ loadState('main').then(function(st){
+  if(st.items===null){
+   return loadState('master').then(function(st2){
+    return (st2.items&&st2.items.length)?st2:st;
+   },function(){return st});
+  }
+  return st;
+ }).then(function(st){
+  BRANCH=st.branch;
+  if(st.items&&st.items.length){
+   ITEMS=st.items;cacheItems();localRev=st.rev;lastPushedRev=st.rev;needSeed=false;
+  }else{
+   needSeed=true;
+  }
+  render();setSync('ok','GitHub');startPoll();restoreSession();
+ }).catch(function(){
+  var c=loadCache();
+  if(c){ITEMS=c}
+  render();setSync('err','Нет связи');startPoll();restoreSession();
+ });
 }
 
 /* ============ РЕЖИМ ВЛАДЕЛЬЦА ============ */
@@ -482,8 +569,15 @@ function renderTop(){
   ? '<span class="adbadge">✏️ Режим редактора</span><button class="btn ghost slim" onclick="logout()">Выйти</button>'
   : '<button class="btn ghost slim" onclick="askAdmin()">🔒 Вход</button>';
 }
+function restoreSession(){
+ if(!ADMIN_KEY||!REPO){return}
+ checkToken(ADMIN_KEY).then(function(ok){
+  if(ok){adminMode=true;render();if(needSeed){doPush()}}
+  else{ADMIN_KEY='';LS.remove(KEY_K)}
+ }).catch(function(){});
+}
 function askAdmin(){
- if(!CONFIG.DB_URL){
+ if(!REPO){
   adminMode=true;render();
   toast('Демо-режим: изменения сохраняются только в этом браузере');
   return;
@@ -491,33 +585,36 @@ function askAdmin(){
  $('#mroot').innerHTML=
  '<div class="back" onclick="if(event.target===this)closeM()"><div class="modal smw">'+
   '<div class="m-head"><div class="mh-nm" style="font-size:16px">🔒 Вход владельца</div>'+
-  '<div class="mh-sub">Введите ключ доступа (Database Secret из настроек Firebase). Он сохранится только в этом браузере.</div>'+
+  '<div class="mh-sub">Введите Personal Access Token — он даёт право изменять данные. Токен сохранится только в этом браузере.</div>'+
   '<button class="m-close" onclick="closeM()">✕</button></div>'+
-  '<div class="m-body"><label class="flab">Ключ доступа</label>'+
-  '<input class="inp" id="fKey" type="password" style="width:100%" placeholder="Database Secret" autocomplete="off"></div>'+
+  '<div class="m-body"><label class="flab">Токен доступа</label>'+
+  '<input class="inp" id="fKey" type="password" style="width:100%" placeholder="ghp_..." autocomplete="off">'+
+  '<div class="hint">Как создать: GitHub → аватар → <b>Settings</b> → <b>Developer settings</b> → <b>Personal access tokens</b> → <b>Tokens (classic)</b> → <b>Generate new token</b> → поставить галочку <b>repo</b> → Generate → скопировать.</div></div>'+
   '<div class="m-foot"><button class="btn ghost" onclick="closeM()">Отмена</button>'+
   '<button class="btn" onclick="tryLogin()">Войти</button></div>'+
  '</div></div>';
  setTimeout(function(){$('#fKey').focus()},60);
 }
 function tryLogin(){
- var key=$('#fKey').value.trim();
- if(!key){toast('Введите ключ',true);return}
- ADMIN_KEY=key;
+ var tok=$('#fKey').value.trim();
+ if(!tok){toast('Введите токен',true);return}
  setSync('busy','Проверка…');
- rPut('meta/probe.json',Date.now()).then(function(){
-  store.set(KEY_K,key);
+ checkToken(tok).then(function(ok){
+  if(!ok){setSync('err','Ошибка');toast('Токен без права записи в этот репозиторий',true);return}
+  ADMIN_KEY=tok;
+  LS.set(KEY_K,tok);
   adminMode=true;closeM();render();
   if(needSeed){doPush()}
   toast('Вход выполнен — доступно редактирование');
- }).catch(function(){
-  ADMIN_KEY='';setSync('err','Ошибка');
-  toast('Неверный ключ или нет связи',true);
+ }).catch(function(code){
+  setSync('err','Ошибка');
+  if(code===401){toast('Неверный токен',true)}
+  else{toast('Не удалось проверить токен — проверьте связь',true)}
  });
 }
 function logout(){
  ADMIN_KEY='';adminMode=false;
- store.del(KEY_K);
+ LS.remove(KEY_K);
  render();
  toast('Вы вышли из режима редактирования');
 }
@@ -621,7 +718,8 @@ function render(){renderTop();renderHead();renderCats();renderChips();renderGrid
 /* ============ ФОТО: ВЫБОР И СЖАТИЕ ============ */
 var pickMode=null, pickId=null, addPhoto=null;
 function pickPhoto(mode,id){
- pickMode=mode;pickId=id;$('#fileInp').value='';$('#fileInp').click()}
+ pickMode=mode;pickId=id;$('#fileInp').value='';$('#fileInp').click();
+}
  $('#fileInp').addEventListener('change',function(){
  var f=this.files[0];if(!f){return}
  loadFile(f,pickMode,pickId);
@@ -643,7 +741,6 @@ function loadFile(f,mode,id){
  im.onerror=function(){URL.revokeObjectURL(url);toast('Не удалось прочитать файл',true)};
  im.src=url;
 }
-/* сжатие по шагам: данные летят в облако и качаются всеми — держим фото компактным */
 function compress(im){
  var steps=[[1100,.82],[900,.74],[800,.64],[700,.52]];
  for(var i=0;i<steps.length;i++){
@@ -665,7 +762,7 @@ vgrid.addEventListener('click',function(e){
  var t=e.target,card=t.closest('.vcard');if(!card){return}
  var id=card.dataset.id;
  if(!adminMode){
-  if(t.closest('.vph')&&t.tagName==='IMG'){openLB(id)} /* зритель: только просмотр фото */
+  if(t.closest('.vph')&&t.tagName==='IMG'){openLB(id)}
   return;
  }
  if(t.closest('.vtool-del')){askDel(id);return}
@@ -677,7 +774,6 @@ vgrid.addEventListener('click',function(e){
  }
 });
 
-/* сохранение отредактированного текста */
 vgrid.addEventListener('blur',function(e){
  var t=e.target;
  if(!adminMode||!t.isContentEditable){return}
@@ -703,7 +799,6 @@ vgrid.addEventListener('paste',function(e){
  document.execCommand('insertText',false,t);
 },true);
 
-/* drag & drop фото (только владелец) */
 vgrid.addEventListener('dragover',function(e){
  if(!adminMode){return}
  var ph=e.target.closest('.vph');
@@ -719,7 +814,6 @@ vgrid.addEventListener('drop',function(e){
 document.addEventListener('dragover',function(e){e.preventDefault()});
 document.addEventListener('drop',function(e){e.preventDefault()});
 
-/* поиск */
  $('#q').addEventListener('input',function(){state.q=this.value.trim();renderGrid()});
 
 /* ============ ЛАЙТБОКС ============ */
@@ -841,44 +935,7 @@ document.addEventListener('keydown',function(e){
 /* ============ СТАРТ ============ */
 ITEMS=loadLocal();
 render();
-
-if(!store.ok){
- setTimeout(function(){
-  toast('Внимание: localStorage недоступен (песочница). Изменения не сохранятся между перезагрузками.',true);
- },800);
-}
-
-if(CONFIG.DB_URL){
- setSync('busy','Подключение…');
- rGet('meta/rev.json').then(function(rev){
-  localRev=(typeof rev==='number')?rev:0;
-  lastPushedRev=localRev;
-  return rGet('items.json');
- }).then(function(items){
-  var arr=toArr(items);
-  if(arr&&arr.length){ITEMS=arr}
-  else{needSeed=true}
-  cacheItems();render();
-  setSync('ok','Облако');
-  startPoll();
-  /* авто-восстановление сессии владельца */
-  if(ADMIN_KEY){
-   rPut('meta/probe.json',Date.now()).then(function(){
-    adminMode=true;render();
-    if(needSeed){doPush()}
-   }).catch(function(){
-    ADMIN_KEY='';store.del(KEY_K);
-   });
-  }
- }).catch(function(){
-  var c=loadCache();
-  if(c){ITEMS=c}
-  render();setSync('err','Нет связи');
-  startPoll();
- });
-}else{
- setSync('','Локально');
-}
+if(REPO){ initRemote() } else { setSync('','Локально') }
 </script>
 </body>
 </html>
