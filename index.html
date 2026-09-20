@@ -16,10 +16,9 @@ body{background:radial-gradient(1100px 520px at 8% -10%,rgba(45,100,170,.17),tra
 #errbox{display:none;position:fixed;left:12px;top:12px;z-index:990;background:#3a1414;border:1px solid #a34444;color:#ffb3b3;padding:12px 16px;border-radius:10px;font:12px/1.5 monospace;max-width:85%;white-space:pre-wrap}
 button{touch-action:manipulation}
 
-/* ── шапка ── */
 #topbar{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid var(--line);background:rgba(14,17,22,.92);position:sticky;top:0;z-index:50;backdrop-filter:blur(10px);box-shadow:0 6px 24px rgba(0,0,0,.35);gap:10px}
 .tb-left{display:flex;align-items:center;gap:12px;min-width:0}
-.logo-ic{width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,#33578b,#17304f);display:flex;align-items:center;justify-content:center;font-size:17px;border:1px solid #3d557f;box-shadow:0 4px 14px rgba(30,80,160,.28);flex:0 0 34px;transition:transform .25s}
+.logo-ic{width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,#33578b,#17304f);display:flex;align-items:center;justify-content:center;font-size:17px;border:1px solid #3d557f;box-shadow:0 4px 14px rgba(30,80,160,.28);flex:0 0 34px}
 .tb-title{font-weight:800;letter-spacing:1.5px;font-size:13px;background:linear-gradient(90deg,#eaf2ff,#9fc4ee);-webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tb-right{display:flex;align-items:center;gap:10px}
 .sync{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;color:var(--mut);white-space:nowrap}
@@ -32,7 +31,6 @@ button{touch-action:manipulation}
 #content{padding:22px;max-width:1440px;width:100%;margin:0 auto;animation:fade .3s}
 @keyframes fade{from{opacity:0;transform:translateY(8px)}}
 
-/* ── заголовок + табы + кнопка добавления ── */
 .ph{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:2px}
 h1{font-size:23px;font-weight:800;letter-spacing:-.3px}
 .cnt{font-size:12px;background:#22304a;border:1px solid #32456a;color:#a9c7ef;padding:2px 10px;border-radius:12px;vertical-align:middle;margin-left:8px}
@@ -51,7 +49,6 @@ h1{font-size:23px;font-weight:800;letter-spacing:-.3px}
 .btn.slim{padding:7px 13px;font-size:11.5px}
 .btn.warn{background:linear-gradient(145deg,#a03c3c,#7c2a2a);border-color:#a34444;box-shadow:0 4px 14px rgba(160,60,60,.25)}
 
-/* ── кнопки категорий ── */
 .cats{display:flex;gap:10px;margin:16px 0 12px;flex-wrap:wrap}
 .cat{display:inline-flex;align-items:center;gap:10px;padding:11px 18px;border-radius:13px;border:1px solid var(--line);background:linear-gradient(145deg,#1c2432,#181e28);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;color:var(--mut);font-family:inherit;box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
 .cat:hover{border-color:#3a4757;color:var(--txt);transform:translateY(-1px)}
@@ -60,7 +57,6 @@ h1{font-size:23px;font-weight:800;letter-spacing:-.3px}
 .cat-ic{font-size:15px}
 .cn{margin-left:4px;background:#232e3d;border:1px solid #32405a;padding:1px 8px;border-radius:10px;font-size:10.5px;color:#aeb9cc;font-style:normal;font-weight:700}
 
-/* ── фильтры-ведомства ── */
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 10px}
 .chip{display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--mut);font-size:12.5px;font-weight:700;cursor:pointer;user-select:none;transition:all .18s}
 .chip:hover{border-color:var(--cc,var(--acc));color:var(--txt)}
@@ -68,14 +64,12 @@ h1{font-size:23px;font-weight:800;letter-spacing:-.3px}
 .chip.on{border-color:var(--cc,var(--acc));color:#fff;background:var(--ccb,rgba(77,163,255,.18));box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
 .dot{width:7px;height:7px;border-radius:50%;flex:0 0 7px;box-shadow:0 0 8px 1px var(--cc,transparent);transition:box-shadow .25s}
 
-/* ── панель управления ── */
 .ctl{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0 4px}
 .inp,.sel{background:#141a23;border:1px solid var(--line);color:var(--txt);padding:10px 13px;border-radius:10px;font-size:14px;font-family:inherit;outline:none;transition:border-color .18s,box-shadow .18s}
 .inp:focus,.sel:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(77,163,255,.14)}
 .sel option{background:#141a23}
 textarea.inp{resize:vertical}
 
-/* ── сетка карточек ── */
 .vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-top:14px}
 .vcard{background:linear-gradient(145deg,#1c2432,#181e28);border:1px solid var(--line);border-radius:16px;overflow:hidden;position:relative;transition:transform .2s,border-color .2s,box-shadow .2s;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);animation:cardIn .4s both}
 @keyframes cardIn{from{opacity:0;transform:translateY(12px) scale(.98)}}
@@ -113,7 +107,6 @@ textarea.inp{resize:vertical}
 [contenteditable]:empty::before{content:attr(data-ph);color:#4a5462}
 .empty{padding:26px;text-align:center;color:var(--mut);border:1px dashed var(--line);border-radius:12px;margin-top:10px}
 
-/* ── лайтбокс ── */
 #lb{position:fixed;inset:0;z-index:600;background:rgba(4,7,11,0);backdrop-filter:blur(0);display:flex;align-items:center;justify-content:center;padding:26px;cursor:zoom-out;opacity:0;transition:opacity .22s,backdrop-filter .22s;pointer-events:none}
 #lb.show{opacity:1;background:rgba(4,7,11,.88);backdrop-filter:blur(9px);pointer-events:auto}
 #lb img{max-width:min(1150px,92vw);max-height:86vh;border-radius:14px;border:1px solid #2e3846;box-shadow:0 30px 90px rgba(0,0,0,.7);transform:scale(.9);opacity:0;transition:transform .24s ease,opacity .24s ease;cursor:zoom-out}
@@ -122,7 +115,6 @@ textarea.inp{resize:vertical}
 .lb-cap span{display:block;font-weight:600;font-size:11px;color:var(--mut);margin-top:3px}
 .lbdot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px}
 
-/* ── модалки ── */
 .back{position:fixed;inset:0;background:rgba(4,7,11,.75);backdrop-filter:blur(7px);z-index:400;display:flex;justify-content:center;align-items:flex-start;overflow-y:auto;padding:34px 14px;animation:fadeIn .2s}
 #croot .back{z-index:420}
 @keyframes up{from{transform:translateY(24px);opacity:0}}
@@ -148,13 +140,11 @@ textarea.inp{resize:vertical}
 .aph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .hint{font-size:11.5px;color:var(--mut);line-height:1.6;margin-top:10px;background:#141a23;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 
-/* ── тосты ── */
 #troot{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:700;display:flex;flex-direction:column;gap:8px}
 .toast{background:#1c2531;border:1px solid #32435c;border-left:3px solid var(--acc);padding:12px 16px;border-radius:12px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.45);animation:up .3s;max-width:360px;transition:opacity .35s,transform .35s}
 .toast.warn{border-left-color:var(--red)}
 .toast.out{opacity:0;transform:translateY(8px)}
 
-/* ============ МОБИЛЬНАЯ АДАПТАЦИЯ ============ */
 @media(max-width:760px){
 body{font-size:13.5px}
 #topbar{height:54px;padding:0 12px}
@@ -260,11 +250,7 @@ window.addEventListener('error',function(ev){
 <div id="troot"></div>
 
 <script>
-/* ================================================================
-   Репозиторий определяется АВТОМАТИЧЕСКИ по адресу сайта
-   (https://ваш_ник.github.io/имя_репо/). Править здесь ничего не нужно.
-   Открытый с диска файл работает в демо-режиме (localStorage).
-   ================================================================ */
+/* Репозиторий определяется автоматически по адресу сайта */
 var REPO=(function(){
  var h=location.hostname,p=location.pathname;
  if(!/\.github\.io$/.test(h)){return null}
@@ -305,7 +291,7 @@ function $(s){return document.querySelector(s)}
 function qsa(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}
 function hex2rgba(h,a){var r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return 'rgba('+r+','+g+','+b+','+a+')'}
-function toast(msg,warn){var t=document.createElement('div');t.className='toast'+(warn?' warn':'');t.textContent=msg;$('#troot').appendChild(t);setTimeout(function(){t.classList.add('out')},2800);setTimeout(function(){t.remove()},3300)}
+function toast(msg,warn){var t=document.createElement('div');t.className='toast'+(warn?' warn':'');t.textContent=msg;$('#troot').appendChild(t);setTimeout(function(){t.classList.add('out')},3200);setTimeout(function(){t.remove()},3700)}
 function b64e(s){return btoa(unescape(encodeURIComponent(s)))}
 
 /* ============ ВЕДОМСТВА ============ */
@@ -336,7 +322,7 @@ var CATS={
 function catName(kind,cat){var a=CATS[kind];for(var i=0;i<a.length;i++){if(a[i].k===cat){return a[i].n}}return a[0].n}
 
 /* ============ ДАННЫЕ / СИДЫ ============ */
-var LOCAL_K='mvd_garage_local', CACHE_K='mvd_garage_cache', KEY_K='mvd_garage_admin_key';
+var LOCAL_K='mvd_garage_local', CACHE_K='mvd_garage_cache', KEY_K='mvd_garage_admin_key', PENDING_K='mvd_garage_pending';
 var ITEMS, localRev=0, lastPushedRev=null, pendingRev=null, needSeed=false;
 var ADMIN_KEY=LS.get(KEY_K)||'';
 var adminMode=false;
@@ -440,20 +426,32 @@ function ghReq(method,path,body){
   return r.status===204?null:r.json();
  });
 }
-/* запись нескольких файлов одним коммитом через Git Data API */
+
+/* Запись файлов одним коммитом. Кэшируем последний коммит/дерево,
+   чтобы следующие сохранения летели по короткому пути (~1 сек). */
+var lastCommitSha=null, lastTreeSha=null;
 function putFiles(files,message){
- var blobs=files.map(function(f){
+ var blobs=Promise.all(files.map(function(f){
   return ghReq('POST','git/blobs',{content:b64e(f.content),encoding:'base64'}).then(function(b){
    return {path:f.path,mode:'100644',type:'blob',sha:b.sha};
   });
- });
- return Promise.all(blobs).then(function(tree){
-  return ghReq('GET','git/refs/heads/'+BRANCH).then(function(ref){
-   var commitSha=ref.object.sha;
-   return ghReq('GET','git/commits/'+commitSha).then(function(cm){
-    return ghReq('POST','git/trees',{base_tree:cm.tree.sha,tree:tree}).then(function(newTree){
-     return ghReq('POST','git/commits',{message:message,tree:newTree.sha,parents:[commitSha]}).then(function(nc){
-      return ghReq('PATCH','git/refs/heads/'+BRANCH,{sha:nc.sha});
+ }));
+ return blobs.then(function(tree){
+  var base;
+  if(lastCommitSha&&lastTreeSha){
+   base=Promise.resolve({commitSha:lastCommitSha,treeSha:lastTreeSha});
+  }else{
+   base=ghReq('GET','git/refs/heads/'+BRANCH).then(function(ref){
+    return ghReq('GET','git/commits/'+ref.object.sha).then(function(cm){
+     return {commitSha:ref.object.sha,treeSha:cm.tree.sha};
+    });
+   });
+  }
+  return base.then(function(b){
+   return ghReq('POST','git/trees',{base_tree:b.treeSha,tree:tree}).then(function(nt){
+    return ghReq('POST','git/commits',{message:message,tree:nt.sha,parents:[b.commitSha]}).then(function(nc){
+     return ghReq('PATCH','git/refs/heads/'+BRANCH,{sha:nc.sha}).then(function(){
+      lastCommitSha=nc.sha;lastTreeSha=nt.sha;
      });
     });
    });
@@ -468,31 +466,31 @@ function checkToken(tok){
   .then(function(j){ return !j.permissions||!!j.permissions.push });
 }
 
-/* ============ ОЧЕРЕДЬ СОХРАНЕНИЯ (один push за раз) ============
-   Раньше несколько быстрых правок запускали ПАРАЛЛЕЛЬНЫЕ сохранения,
-   которые перезаписывали друг друга, а страница могла подтянуть с
-   сервера устаревшую копию и "вернуть" удалённую карточку.
-   Теперь: push-ы строго по очереди; правки, сделанные во время
-   сохранения, уходят следующим; откат на старую версию данных
-   запрещён; упавшее сохранение повторяется автоматически.        */
+/* ============ СОХРАНЕНИЕ: мгновенный старт + очередь + защита от потери ============
+   1) Правка (удаление/добавление/текст/фото) → сохранение уходит СРАЗУ.
+   2) Push-ы идут строго по очереди; сделанные в полёте — следующим заходом.
+   3) Несохранённое помечается в браузере: если обновить страницу до
+      завершения сохранения — после загрузки правки восстановятся
+      и автоматически дозапишутся в GitHub.
+   4) Ошибки показываются тостом с кодом и повторяются автоматически.  */
 var pushTimer=null, pushInFlight=false, dataDirty=false, pushRetries=0, pushToastShown=false;
 
 function commit(){
  cacheItems();
  if(!REPO){ saveLocal(ITEMS); return }
  if(!adminMode){ return }
- dataDirty=true;              /* есть несохранённые правки */
- if(pushInFlight){ return }   /* сохранение уже идёт — правки уйдут следующим */
+ dataDirty=true;
+ LS.set(PENDING_K,String(Date.now()));   /* метка: есть несохранённое */
+ if(pushInFlight){ return }
  if(pushTimer){ return }
- pushTimer=setTimeout(doPush,600);
+ pushTimer=setTimeout(doPush,80);         /* практически мгновенно */
 }
 
 function doPush(){
  pushTimer=null;
  if(!adminMode||!REPO||pushInFlight||!dataDirty){ return }
- /* фиксируем снимок данных на этот момент */
  var snapshot=JSON.stringify({items:ITEMS});
- dataDirty=false;             /* правки ПОСЛЕ этой строки снова поднимут флаг */
+ dataDirty=false;
  needSeed=false;
  pushInFlight=true;
  setSync('busy','Сохранение…');
@@ -504,51 +502,57 @@ function doPush(){
  ],'sync: обновление данных ('+rev+')').then(function(){
   pushInFlight=false;pushRetries=0;pushToastShown=false;
   localRev=rev;lastPushedRev=rev;pendingRev=null;
+  LS.remove(PENDING_K);                   /* сохранено — метку снимаем */
   setSync('ok','GitHub');
-  /* за время сохранения накопились новые правки — отправляем их */
-  if(dataDirty){ pushTimer=setTimeout(doPush,400) }
+  if(dataDirty){ pushTimer=setTimeout(doPush,150) }
  }).catch(function(code){
   pushInFlight=false;
   pendingRev=null;
-  dataDirty=true;             /* не сохранилось — держим и повторим */
+  dataDirty=true;
   if(code===401){
    setSync('err','Токен недействителен');
    toast('Токен недействителен — войдите заново через 🔒',true);
-   return;                    /* без автоповтора */
+   return;
   }
-  if(code===422&&pushRetries<3){ /* ветку подвинули — сразу пробуем заново */
-   pushRetries++;pushTimer=setTimeout(doPush,800);return;
+  if(code===422&&pushRetries<3){          /* ветку подвинули (напр., правка файла на GitHub) */
+   pushRetries++;
+   lastCommitSha=null;lastTreeSha=null;   /* сбрасываем кэш и пробуем полным путём */
+   pushTimer=setTimeout(doPush,250);
+   return;
   }
   setSync('err','Не сохранено');
-  if(!pushToastShown){ pushToastShown=true; toast('Не удалось сохранить — повторю автоматически',true) }
+  var msg=(code===403)
+   ?'GitHub отклонил запись (403): пересоздайте токен с галочкой repo'
+   :'Не удалось сохранить (ошибка '+code+') — повторю автоматически';
+  if(!pushToastShown){ pushToastShown=true; toast(msg,true) }
   pushRetries++;
-  pushTimer=setTimeout(doPush,8000);
+  pushTimer=setTimeout(doPush,6000);
  });
 }
 
-/* зрительский опрос: раз в ~1.5 сек проверяем версию */
+/* зрительский опрос: раз в секунду проверяем версию */
 function startPoll(){
- setInterval(checkRev,1500);
+ setInterval(checkRev,1000);
  document.addEventListener('visibilitychange',function(){ if(!document.hidden){checkRev()} });
 }
 function checkRev(){
  rawGet('rev.txt').then(function(t){
   var rev=parseInt(t,10)||0;
-  if(rev<localRev){ return }                       /* устаревший ответ — откат данных запрещён */
+  if(rev<localRev){ return }
   if(rev===pendingRev){ setSync('ok','GitHub'); return }
   if(rev===localRev){ setSync('ok','GitHub'); return }
-  if(adminMode&&(dataDirty||pushInFlight)){ return } /* есть свои несохранённые правки — сначала сохраним их */
+  if(adminMode&&(dataDirty||pushInFlight)){ return }
   setSync('busy','Обновление…');
   return rawGet('data.json').then(function(d){
    var arr=null;
    try{ arr=toArr(JSON.parse(d).items) }catch(e){ arr=null }
-   if(arr){ ITEMS=arr; cacheItems() }               /* пустой список — тоже валидное состояние */
+   if(arr){ ITEMS=arr;cacheItems() }
    localRev=rev; lastPushedRev=rev;
    render();
    setSync('ok','GitHub');
   });
  }).catch(function(e){
-  if(e&&e.nf){ setSync('ok','GitHub'); return } /* данных ещё нет — ждём владельца */
+  if(e&&e.nf){ setSync('ok','GitHub'); return }
   setSync('err','Нет связи');
  });
 }
@@ -580,10 +584,16 @@ function initRemote(){
   return st;
  }).then(function(st){
   BRANCH=st.branch;
-  if(st.items){                    /* массив, в т.ч. пустой — актуальное состояние */
-   ITEMS=st.items;cacheItems();localRev=st.rev;lastPushedRev=st.rev;needSeed=false;
+  /* если прошлый визит оборвался с несохранёнными правками — берём их из кэша */
+  var pending=!!LS.get(PENDING_K);
+  var pc=pending?loadCache():null;
+  if(st.items){
+   localRev=st.rev;lastPushedRev=st.rev;needSeed=false;
+   if(pc){ ITEMS=pc;cacheItems() }        /* наши правки важнее серверной копии */
+   else{ ITEMS=st.items;cacheItems() }
   }else{
-   needSeed=true;
+   if(pc){ ITEMS=pc;needSeed=false }
+   else{ needSeed=true }
   }
   render();setSync('ok','GitHub');startPoll();restoreSession();
  }).catch(function(){
@@ -604,7 +614,8 @@ function restoreSession(){
  checkToken(ADMIN_KEY).then(function(ok){
   if(ok){
    adminMode=true;render();
-   if(needSeed||dataDirty){ dataDirty=true;doPush() }
+   /* были несохранённые правки или нет данных — пишем сразу */
+   if(needSeed||LS.get(PENDING_K)){ dataDirty=true;doPush() }
   }
   else{ ADMIN_KEY='';LS.remove(KEY_K) }
  }).catch(function(){});
@@ -637,7 +648,7 @@ function tryLogin(){
   ADMIN_KEY=tok;
   LS.set(KEY_K,tok);
   adminMode=true;closeM();render();
-  if(needSeed||dataDirty){ dataDirty=true;doPush() }
+  if(needSeed||LS.get(PENDING_K)){ dataDirty=true;doPush() }
   toast('Вход выполнен — доступно редактирование');
  }).catch(function(code){
   setSync('err','Ошибка');
