@@ -20,6 +20,7 @@ button{touch-action:manipulation}
 .tb-left{display:flex;align-items:center;gap:12px;min-width:0}
 .logo-ic{width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,#33578b,#17304f);display:flex;align-items:center;justify-content:center;font-size:17px;border:1px solid #3d557f;box-shadow:0 4px 14px rgba(30,80,160,.28);flex:0 0 34px}
 .tb-title{font-weight:800;letter-spacing:1.5px;font-size:13px;background:linear-gradient(90deg,#eaf2ff,#9fc4ee);-webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ver{font-size:9px;font-weight:700;color:#5b6675;letter-spacing:.5px;margin-left:6px;-webkit-text-fill-color:#5b6675}
 .tb-right{display:flex;align-items:center;gap:10px}
 .sync{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;color:var(--mut);white-space:nowrap}
 .sync i{width:8px;height:8px;border-radius:50%;background:#55606f;transition:background .3s,box-shadow .3s}
@@ -208,7 +209,7 @@ window.addEventListener('error',function(ev){
 <header id="topbar">
   <div class="tb-left">
     <div class="logo-ic" id="logoIc">🚔</div>
-    <div class="tb-title" id="tbTitle">МВД · АВТОПАРК</div>
+    <div class="tb-title"><span id="tbTitle">МВД · АВТОПАРК</span><span class="ver">v8</span></div>
   </div>
   <div class="tb-right">
     <div class="sync" id="sync"><i></i><span id="syncTxt">Локально</span></div>
@@ -398,7 +399,6 @@ function loadLocal(){
 function saveLocal(items){
  try{ LS.set(LOCAL_K,JSON.stringify({items:items})) }catch(e){ toast('Локальное хранилище переполнено',true) }
 }
-/* кэш хранит версию + данные — по нему страница понимает, «опережает» ли она сервер */
 function cacheItems(){try{LS.set(CACHE_K,JSON.stringify({rev:localRev,items:ITEMS}))}catch(e){}}
 function loadCache(){
  try{
@@ -410,60 +410,51 @@ function loadCache(){
 function byId(id){for(var i=0;i<ITEMS.length;i++){if(ITEMS[i].id===id){return ITEMS[i]}}return null}
 function countItems(kind,cat,dp){var n=0;for(var i=0;i<ITEMS.length;i++){var it=ITEMS[i];if(it.kind===kind&&it.cat===cat&&(dp===null||it.dep===dp)){n++}}return n}
 
-/* ============ СИНХРОНИЗАЦИЯ ЧЕРЕЗ GITHUB ============
-   Чтение: два канала —
-   · API api.github.com (свежий, без кэша): владелец — каждые 3 сек,
-     зрители — примерно раз в минуту (у GitHub лимит для гостей);
-   · raw (быстрый, но может отдавать копию до 5 минут) — каждую секунду.
-   Если raw отстал — страница сама переключается на API.
-   Запись: только владелец, одним коммитом (data.json + rev.txt).    */
+/* ============ СИНХРОНИЗАЦИЯ ЧЕРЕЗ GITHUB (Contents API) ============
+   Запись: 1–2 PUT-запроса напрямую в файлы репозитория — быстро (~1 сек).
+   Чтение: всегда напрямую через api.github.com (без CDN-кэша) —
+   страница показывает ровно то, что записано на сервере.               */
 function setSync(cls,txt){
  var s=$('#sync');
  s.className='sync '+(cls||'');
  if(txt){$('#syncTxt').textContent=txt}
 }
-function rawUrl(file,br){return 'https://raw.githubusercontent.com/'+REPO+'/'+(br||BRANCH)+'/'+file+'?v='+Date.now()}
-function rawGet(file,br){
- return fetch(rawUrl(file,br),{cache:'no-store'}).then(function(r){
-  if(r.status===404){var e=new Error('404');e.nf=true;throw e}
-  if(!r.ok){throw new Error(r.status)}
-  return r.text();
- });
-}
-/* содержимое файла напрямую через API (без CDN-кэша) */
-function apiText(path,auth){
- var h={Accept:'application/vnd.github.raw'};
- if(auth&&ADMIN_KEY){h.Authorization='token '+ADMIN_KEY}
- return fetch('https://api.github.com/repos/'+REPO+'/contents/'+path+'?t='+Date.now(),{headers:h,cache:'no-store'}).then(function(r){
-  if(!r.ok){var e=new Error(r.status);if(r.status===403&&!(auth&&ADMIN_KEY)){e.rl=true}throw e}
-  return r.text();
- });
-}
-/* большой файл (с фото) — через Git Blobs API */
-function apiBlobText(sha){
+function ghApi(path,opts,auth){
  var h={Accept:'application/vnd.github+json'};
- if(ADMIN_KEY){h.Authorization='token '+ADMIN_KEY}
- return fetch('https://api.github.com/repos/'+REPO+'/git/blobs/'+sha+'?t='+Date.now(),{headers:h,cache:'no-store'}).then(function(r){
-  if(!r.ok){var e=new Error(r.status);if(r.status===403&&!ADMIN_KEY){e.rl=true}throw e}
-  return r.json();
- }).then(function(j){return b64d(j.content)});
-}
-function ghHeaders(){return {Authorization:'token '+ADMIN_KEY,Accept:'application/vnd.github+json','Content-Type':'application/json'}}
-function ghReq(method,path,body){
- return fetch('https://api.github.com/repos/'+REPO+'/'+path,{
-  method:method,headers:ghHeaders(),
-  body:body?JSON.stringify(body):undefined
+ if(auth&&ADMIN_KEY){h.Authorization='token '+ADMIN_KEY}
+ if(opts&&opts.body){h['Content-Type']='application/json'}
+ return fetch('https://api.github.com/repos/'+REPO+'/'+path+(path.indexOf('?')<0?'?':'&')+'t='+Date.now(),{
+  method:(opts&&opts.method)||'GET',
+  headers:h,
+  cache:'no-store',
+  body:opts&&opts.body?JSON.stringify(opts.body):undefined
  }).then(function(r){
+  if(r.status===404){var e=new Error(404);e.nf=true;throw e}
+  if(r.status===403&&!(auth&&ADMIN_KEY)){var e2=new Error(403);e2.rl=true;throw e2}
   if(!r.ok){throw r.status}
   return r.status===204?null:r.json();
  });
 }
-/* rev.txt: "N" или "N:shaDataJson" */
-function parseRevTxt(t){
- t=String(t||'').trim();
- var i=t.indexOf(':');
- if(i<0){return {rev:parseInt(t,10)||0,sha:null}}
- return {rev:parseInt(t.substring(0,i),10)||0,sha:t.substring(i+1).trim()};
+/* rev.txt: "N" или "N:shaDataJson". Читаем вместе с sha самого файла —
+   это и версия данных, и всё нужное для быстрой записи. */
+function fetchRevMeta(auth){
+ return ghApi('contents/rev.txt?ref='+BRANCH,null,auth).then(function(j){
+  var txt='';
+  try{txt=atob(String(j.content||'').replace(/\s/g,''))}catch(e){}
+  var i=txt.indexOf(':'),rev=parseInt(txt,10)||0,sha=null;
+  if(i>=0){sha=txt.substring(i+1).trim()}
+  return {rev:rev,sha:sha,revSha:j.sha};
+ });
+}
+function apiBlobText(sha,auth){
+ return ghApi('git/blobs/'+sha,null,auth).then(function(j){return b64d(j.content)});
+}
+function rawGet(file,br){
+ return fetch('https://raw.githubusercontent.com/'+REPO+'/'+(br||BRANCH)+'/'+file+'?v='+Date.now(),{cache:'no-store'}).then(function(r){
+  if(r.status===404){var e=new Error('404');e.nf=true;throw e}
+  if(!r.ok){throw new Error(r.status)}
+  return r.text();
+ });
 }
 function checkToken(tok){
  return fetch('https://api.github.com/user',{headers:{Authorization:'token '+tok}})
@@ -472,19 +463,31 @@ function checkToken(tok){
   .then(function(j){ return !j.permissions||!!j.permissions.push });
 }
 
-/* ============ СОХРАНЕНИЕ (очередь, короткий путь) ============ */
+/* ============ СОХРАНЕНИЕ ============ */
 var pushTimer=null, pushInFlight=false, dataDirty=false, pushRetries=0, pushToastShown=false;
-var lastCommitSha=null, lastTreeSha=null;
 
 function commit(){
+ cacheItems();
  if(!REPO){ saveLocal(ITEMS); return }
  if(!adminMode){ return }
  dataDirty=true;
  LS.set(PENDING_K,String(Date.now()));
- cacheItems();
  if(pushInFlight){ return }
  if(pushTimer){ return }
- pushTimer=setTimeout(doPush,100);          /* уходит почти мгновенно */
+ pushTimer=setTimeout(doPush,80);            /* старт почти мгновенно */
+}
+
+function treeSha(path){
+ return ghApi('git/trees/'+BRANCH,null,true).then(function(t){
+  var out=null;
+  (t.tree||[]).forEach(function(x){if(x.path===path){out=x.sha}});
+  return out;
+ });
+}
+function putContent(path,contentB64,sha,message){
+ var body={message:message,content:contentB64,branch:BRANCH};
+ if(sha){body.sha=sha}
+ return ghApi('contents/'+path,{method:'PUT',body:body},true);
 }
 
 function doPush(){
@@ -497,37 +500,22 @@ function doPush(){
  pushInFlight=true;
  setSync('busy','Сохранение…');
  pendingRev=rev;
- var dataSha=null;
- ghReq('POST','git/blobs',{content:b64e(snapshot),encoding:'base64'}).then(function(b){
-  dataSha=b.sha;
-  return ghReq('POST','git/blobs',{content:b64e(rev+':'+b.sha),encoding:'base64'});
- }).then(function(bRev){
-  var tree=[
-   {path:'data.json',mode:'100644',type:'blob',sha:dataSha},
-   {path:'rev.txt',mode:'100644',type:'blob',sha:bRev.sha}
-  ];
-  var base;
-  if(lastCommitSha&&lastTreeSha){
-   base=Promise.resolve({c:lastCommitSha,t:lastTreeSha});
-  }else{
-   base=ghReq('GET','git/refs/heads/'+BRANCH).catch(function(code){
-    if(code===404&&BRANCH!=='master'){BRANCH='master';return ghReq('GET','git/refs/heads/master')}
-    throw code;
-   }).then(function(ref){
-    return ghReq('GET','git/commits/'+ref.object.sha).then(function(cm){
-     return {c:ref.object.sha,t:cm.tree.sha};
-    });
-   });
+ var revSha=null,dataSha=null;
+ fetchRevMeta(true).then(function(meta){
+  revSha=meta.revSha;
+  dataSha=meta.sha;
+  if(!dataSha&&meta.rev>0){
+   /* старый формат без sha — узнаем актуальный sha файла через дерево */
+   return treeSha('data.json').then(function(s){dataSha=s},function(){});
   }
-  return base.then(function(b){
-   return ghReq('POST','git/trees',{base_tree:b.t,tree:tree}).then(function(nt){
-    return ghReq('POST','git/commits',{message:'sync: '+rev,tree:nt.sha,parents:[b.c]}).then(function(nc){
-     return ghReq('PATCH','git/refs/heads/'+BRANCH,{sha:nc.sha}).then(function(){
-      lastCommitSha=nc.sha;lastTreeSha=nt.sha;
-     });
-    });
-   });
-  });
+ },function(e){
+  if(e&&e.nf){return}   /* файлов ещё нет — создадим */
+  throw e;
+ }).then(function(){
+  return putContent('data.json',b64e(snapshot),dataSha,'sync: данные '+rev);
+ }).then(function(res){
+  var ns=(res&&res.content&&res.content.sha)||null;
+  return putContent('rev.txt',b64e(rev+':'+ns),revSha,'sync: rev '+rev);
  }).then(function(){
   pushInFlight=false;pushRetries=0;pushToastShown=false;
   localRev=rev;pendingRev=null;
@@ -537,42 +525,45 @@ function doPush(){
   if(dataDirty){ pushTimer=setTimeout(doPush,150) }
  }).catch(function(code){
   pushInFlight=false;pendingRev=null;dataDirty=true;
-  if(code===401){
+  var c=(typeof code==='number')?code:(code&&code.message?+code.message||code.message:code);
+  if(c===401){
    setSync('err','Токен недействителен');
    toast('Токен недействителен — войдите заново через 🔒',true);
    return;
   }
-  if(code===422&&pushRetries<4){
+  if((c===409||c===422)&&pushRetries<4){    /* sha устарел — перечитываем и повторяем */
    pushRetries++;
-   lastCommitSha=null;lastTreeSha=null;
-   pushTimer=setTimeout(doPush,300);
+   pushTimer=setTimeout(doPush,350);
    return;
   }
   setSync('err','Не сохранено');
-  var msg=(code===403)?'GitHub отклонил запись (403) — пересоздайте токен с галочкой repo'
-   :(code===404)?'Не найдена ветка/репозиторий (404) — напишите мне'
-   :'Не удалось сохранить (ошибка '+code+') — повторю автоматически';
+  var msg=(c===403)?'GitHub отклонил запись (403) — пересоздайте токен с галочкой repo'
+   :(c===404)?'Не найден файл/ветка (404) — напишите мне'
+   :'Не удалось сохранить (ошибка '+c+') — повторю автоматически';
   if(!pushToastShown){ pushToastShown=true; toast(msg,true) }
   pushRetries++;
   pushTimer=setTimeout(doPush,7000);
  });
 }
 
-/* ============ ЧТЕНИЕ: ДВА КАНАЛА ============ */
+/* ============ ЧТЕНИЕ ============ */
 function resolveRev(){
- return apiText('rev.txt',true).catch(function(e){
+ return fetchRevMeta(true).catch(function(e){
   if(e&&e.rl){throw e}
-  return apiText('rev.txt',false);
+  return fetchRevMeta(false);
  }).catch(function(e){
   if(e&&e.rl){throw e}
-  return rawGet('rev.txt').then(function(t){return parseRevTxt(t)});
+  return rawGet('rev.txt').then(function(t){
+   var i=String(t).indexOf(':'),rev=parseInt(t,10)||0,sha=null;
+   if(i>=0){sha=t.substring(i+1).trim()}
+   return {rev:rev,sha:sha,revSha:null};
+  });
  }).catch(function(e){
-  if(e&&e.nf){return {rev:0,sha:null}}
+  if(e&&e.nf){return {rev:0,sha:null,revSha:null}}
   throw e;
  });
 }
 function pullData(rv){
- /* сначала быстрый raw, при отставании кэша — через API */
  return rawGet('data.json').then(function(d){
   var j=null;try{j=JSON.parse(d)}catch(e){}
   var items=toArr(j&&j.items);
@@ -583,14 +574,15 @@ function pullData(rv){
   throw new Error('stale');
  }).catch(function(){
   if(rv.sha){
-   return apiBlobText(rv.sha).then(function(txt){
+   return apiBlobText(rv.sha,!!ADMIN_KEY).then(function(txt){
     var j=JSON.parse(txt);
     return {rev:rv.rev,items:toArr(j.items)||[]};
    });
   }
-  return apiText('data.json',!!ADMIN_KEY).then(function(txt){
-   var j=JSON.parse(txt);
-   return {rev:(typeof j.rev==='number'?j.rev:rv.rev),items:toArr(j.items)||[]};
+  return ghApi('contents/data.json?ref='+BRANCH,null,!!ADMIN_KEY).then(function(j){
+   var txt='';try{txt=b64d(String(j.content||'').replace(/\s/g,''))}catch(e){}
+   var d=JSON.parse(txt);
+   return {rev:(typeof d.rev==='number'?d.rev:rv.rev),items:toArr(d.items)||[]};
   });
  });
 }
@@ -601,21 +593,21 @@ function applyData(rev,items){
 /* быстрый канал: raw каждую секунду */
 function rawTick(){
  rawGet('rev.txt').then(function(t){
-  var rv=parseRevTxt(t);
-  if(rv.rev===localRev){setSync('ok','GitHub');return}
-  if(rv.rev<pendingRev){return}
-  if(rv.rev===pendingRev){return}
-  if(rv.rev<localRev){return}                    /* кэш отстал — игнорируем откат */
+  var i=String(t).indexOf(':'),rev=parseInt(t,10)||0;
+  if(rev===localRev){setSync('ok','GitHub');return}
+  if(rev<pendingRev){return}
+  if(rev===pendingRev){return}
+  if(rev<localRev){return}
   if(adminMode&&(dataDirty||pushInFlight)){return}
   setSync('busy','Обновление…');
   return rawGet('data.json').then(function(d){
    var j=null;try{j=JSON.parse(d)}catch(e){}
    var items=toArr(j&&j.items);
-   if(items&&(typeof j.rev!=='number'||j.rev>=rv.rev)){
-    applyData((typeof j.rev==='number')?Math.max(j.rev,rv.rev):rv.rev,items);
+   if(items&&(typeof j.rev!=='number'||j.rev>=rev)){
+    applyData((typeof j.rev==='number')?Math.max(j.rev,rev):rev,items);
     setSync('ok','GitHub');
    }else{
-    apiTick(true);                               /* кэш подвёл — срочно через API */
+    apiTick(true);
    }
   });
  }).catch(function(e){
@@ -624,18 +616,17 @@ function rawTick(){
  });
 }
 
-/* надёжный канал: API (для владельца — каждые 3 сек, для гостей — ~раз в минуту) */
-var apiQuietUntil=0, nextViewerApi=0;
+/* надёжный канал: API напрямую (владелец — каждые 3 сек, гости — ~раз в минуту) */
+var apiQuietUntil=0,nextViewerApi=0;
 function apiTick(force){
  var now=Date.now();
  if(now<apiQuietUntil){return}
  if(!ADMIN_KEY){
   if(!force&&now<nextViewerApi){return}
-  if(force&&now<nextViewerApi-55000){return}      /* форс не чаще раза в 20 сек */
+  if(force&&now<nextViewerApi-55000){return}
  }
- apiText('rev.txt',!!ADMIN_KEY).then(function(t){
+ fetchRevMeta(!!ADMIN_KEY).then(function(rv){
   if(!ADMIN_KEY){nextViewerApi=now+75000}
-  var rv=parseRevTxt(t);
   if(rv.rev<=localRev||rv.rev===pendingRev){setSync('ok','GitHub');return}
   if(adminMode&&(dataDirty||pushInFlight)){return}
   setSync('busy','Обновление…');
@@ -644,7 +635,7 @@ function apiTick(force){
    setSync('ok','GitHub');
   });
  }).catch(function(e){
-  if(e&&e.rl){apiQuietUntil=now+600000;return}   /* лимит гостей — подождём */
+  if(e&&e.rl){apiQuietUntil=now+600000;return}
  });
 }
 function startPoll(){
@@ -660,7 +651,6 @@ function initRemote(){
   var cache=loadCache();
   var noData=(rv===null||rv.nf||rv.rev===0);
   if(noData){
-   /* данных на сервере ещё нет: показываем кэш (правки) или сиды */
    if(cache){
     ITEMS=cache.items;localRev=cache.rev;needSeed=false;
     if(ADMIN_KEY){dataDirty=true}
@@ -668,7 +658,7 @@ function initRemote(){
    render();setSync('ok','GitHub');startPoll();restoreSession();return;
   }
   if(ADMIN_KEY&&cache&&cache.rev>rv.rev){
-   /* локальный снимок опережает сервер (пуш прервали F5) — восстанавливаем и дозапишем */
+   /* локальный снимок опережает сервер (пуш прервали) — восстанавливаем и дозапишем */
    ITEMS=cache.items;localRev=cache.rev;needSeed=false;dataDirty=true;
    render();setSync('ok','GitHub');startPoll();restoreSession();return;
   }
