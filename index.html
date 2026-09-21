@@ -70,7 +70,6 @@ h1{font-size:23px;font-weight:800;letter-spacing:-.3px}
 .sel option{background:#141a23}
 textarea.inp{resize:vertical}
 
-/* ── список карточек ── */
 .vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-top:14px}
 .vgrid.grouped{display:block}
 .vcard{background:linear-gradient(145deg,#1c2432,#181e28);border:1px solid var(--line);border-radius:16px;overflow:hidden;position:relative;transition:transform .2s,border-color .2s,box-shadow .2s,opacity .2s;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);animation:cardIn .4s both}
@@ -110,7 +109,6 @@ textarea.inp{resize:vertical}
 [contenteditable]:empty::before{content:attr(data-ph);color:#4a5462}
 .empty{padding:26px;text-align:center;color:var(--mut);border:1px dashed var(--line);border-radius:12px;margin-top:10px}
 
-/* ── секции классов (Основной автопарк) ── */
 .gsec{margin:0 0 24px;border-radius:14px;padding:10px;transition:background .2s,outline-color .2s;outline:2px dashed transparent;outline-offset:2px}
 .gsec.dragover{outline-color:var(--gc,#4da3ff);background:rgba(77,163,255,.05)}
 .ghead{display:flex;align-items:center;gap:10px;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:800;margin-bottom:11px}
@@ -121,13 +119,11 @@ textarea.inp{resize:vertical}
 .ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}
 .gempty{min-height:64px;display:flex;align-items:center;justify-content:center;border:1px dashed #232b37;border-radius:12px;color:#5b6675;font-size:12px}
 
-/* ── выбор класса в модалке ── */
 .clsgrid{display:flex;flex-direction:column;gap:8px}
 .clsbtn{display:flex;align-items:center;gap:10px;padding:13px 16px;border-radius:12px;border:1px solid var(--line);background:linear-gradient(145deg,#1c2432,#181e28);color:var(--txt);font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s;text-align:left}
 .clsbtn:hover{border-color:var(--cc,var(--acc));transform:translateX(3px)}
 .clsbtn.on{border-color:var(--cc,var(--acc));background:var(--ccb,rgba(77,163,255,.14));box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
 
-/* ── скелетон загрузки ── */
 .vcard.sk{pointer-events:none;cursor:default}
 .vcard.sk::before{display:none}
 .skph{aspect-ratio:16/10;background:#161c26;position:relative;overflow:hidden}
@@ -232,9 +228,17 @@ h1{font-size:20px}
 <body>
 <div id="errbox"></div>
 <script>
+/* Показываем красный бокс ТОЛЬКО для настоящих ошибок скрипта.
+   Ошибки загрузки ресурсов (img, link, script) — это обычные Event,
+   а не ErrorEvent, и у них нет message — раньше они давали «неизвестная». */
 window.addEventListener('error',function(ev){
+ if(!(ev instanceof ErrorEvent)){return}
+ if(!ev.message){return}
  var b=document.getElementById('errbox');
- if(b){b.style.display='block';b.textContent='Ошибка: '+(ev.message||'неизвестная')+' — проверьте, что файл скопирован целиком';}
+ if(b){
+  b.style.display='block';
+  b.textContent='Ошибка: '+ev.message+(ev.filename?' — '+ev.filename+':'+(ev.lineno||0):'');
+ }
 },true);
 </script>
 
@@ -343,7 +347,7 @@ var DEPS=[
 ];
 function dep(k){for(var i=0;i<DEPS.length;i++){if(DEPS[i].k===k){return DEPS[i]}}return DEPS[0]}
 
-/* ============ КЛАССЫ МАШИН (Основной автопарк) ============ */
+/* ============ КЛАССЫ МАШИН ============ */
 var CLASSES=[
  {k:'premium', n:'Премиум',       c:'#f7c948'},
  {k:'high',    n:'Высший класс',  c:'#c084fc'},
@@ -355,7 +359,6 @@ var CLS_MAP={};for(var ci=0;ci<CLASSES.length;ci++){CLS_MAP[CLASSES[ci].k]=CLASS
 function clName(k){return CLS_MAP[k]?CLS_MAP[k].n:'Стандарт'}
 function clColor(k){return CLS_MAP[k]?CLS_MAP[k].c:'#4da3ff'}
 function isGrouped(){return state.kind==='cars'&&state.cat==='main'}
-/* класс карточки: задан или «Стандарт» по умолчанию (для старых данных) */
 function clsOf(it){
  if(!it||it.kind!=='cars'||it.cat!=='main'){return null}
  return (it.cls&&CLS_MAP[it.cls])?it.cls:'standard';
@@ -908,7 +911,6 @@ function renderGrid(){
  var list=filterList();
  var vg=$('#vgrid');
  if(isGrouped()){
-  /* Основной автопарк: секции по классам */
   vg.classList.add('grouped');
   var h='',delay=0;
   for(var g=0;g<CLASSES.length;g++){
@@ -991,7 +993,7 @@ function compress(im){
  }
 }
 
-/* ============ ПЕРЕТАСКИВАНИЕ КАРТОЧЕК МЕЖДУ КЛАССАМИ ============ */
+/* ============ ПЕРЕТАСКИВАНИЕ ============ */
 var vgrid=$('#vgrid');
 function dragHasFiles(e){
  return !!(e.dataTransfer&&e.dataTransfer.types&&Array.prototype.indexOf.call(e.dataTransfer.types,'Files')>-1);
@@ -1013,14 +1015,12 @@ vgrid.addEventListener('dragend',function(){
 vgrid.addEventListener('dragover',function(e){
  if(!adminMode){return}
  if(isGrouped()&&!dragHasFiles(e)){
-  /* переносим карточку между классами */
   var sec=e.target.closest('.gsec');
   qsa('.gsec.dragover',vgrid).forEach(function(x){x.classList.remove('dragover')});
   qsa('.vph.drag',vgrid).forEach(function(x){x.classList.remove('drag')});
   if(sec){e.preventDefault();e.dataTransfer.dropEffect='move';sec.classList.add('dragover')}
   return;
  }
- /* перетаскивание файла-фото на карточку */
  qsa('.gsec.dragover',vgrid).forEach(function(x){x.classList.remove('dragover')});
  var ph=e.target.closest('.vph');
  qsa('.vph.drag',vgrid).forEach(function(x){x.classList.remove('drag')});
@@ -1029,7 +1029,6 @@ vgrid.addEventListener('dragover',function(e){
 vgrid.addEventListener('drop',function(e){
  if(!adminMode){return}
  if(isGrouped()&&!dragHasFiles(e)){
-  /* карточка брошена на секцию класса */
   var sec=e.target.closest('.gsec');
   qsa('.gsec.dragover',vgrid).forEach(function(x){x.classList.remove('dragover')});
   qsa('.vcard.dragging',vgrid).forEach(function(x){x.classList.remove('dragging')});
@@ -1049,13 +1048,12 @@ vgrid.addEventListener('drop',function(e){
   }
   return;
  }
- /* файл-фото брошен на карточку */
  var ph=e.target.closest('.vph'),card=e.target.closest('.vcard');
  qsa('.vph.drag',vgrid).forEach(function(x){x.classList.remove('drag')});
  if(ph&&card){e.preventDefault();var f=e.dataTransfer.files[0];if(f){loadFile(f,'item',card.dataset.id)}}
 });
 
-/* ============ КЛИКИ ПО СЕТКЕ ============ */
+/* ============ КЛИКИ ============ */
 vgrid.addEventListener('click',function(e){
  var t=e.target,card=t.closest('.vcard');if(!card){return}
  var id=card.dataset.id;
@@ -1103,7 +1101,7 @@ document.addEventListener('drop',function(e){e.preventDefault()});
 
  $('#q').addEventListener('input',function(){ if(!booted){return} state.q=this.value.trim();renderGrid() });
 
-/* ============ ВЫБОР КЛАССА ЧЕРЕЗ КНОПКУ ============ */
+/* ============ ВЫБОР КЛАССА ============ */
 function askClass(id){
  if(!adminMode){return}
  var it=byId(id);if(!it){return}
@@ -1144,7 +1142,12 @@ function openLB(id){
 function closeLB(){
  var lb=$('#lb');
  lb.classList.remove('zoom');
- setTimeout(function(){lb.classList.remove('show');$('#lbImg').src=''},240);
+ setTimeout(function(){
+  lb.classList.remove('show');
+  /* removeAttribute вместо src='' — иначе некоторые браузеры
+     шлют error и старый обработчик показывал «неизвестную». */
+  $('#lbImg').removeAttribute('src');
+ },240);
 }
  $('#lb').addEventListener('click',function(e){
  if(e.target===this||e.target.id==='lbImg'){closeLB()}
