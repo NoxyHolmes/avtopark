@@ -70,11 +70,14 @@ h1{font-size:23px;font-weight:800;letter-spacing:-.3px}
 .sel option{background:#141a23}
 textarea.inp{resize:vertical}
 
+/* ── список карточек ── */
 .vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-top:14px}
-.vcard{background:linear-gradient(145deg,#1c2432,#181e28);border:1px solid var(--line);border-radius:16px;overflow:hidden;position:relative;transition:transform .2s,border-color .2s,box-shadow .2s;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);animation:cardIn .4s both}
+.vgrid.grouped{display:block}
+.vcard{background:linear-gradient(145deg,#1c2432,#181e28);border:1px solid var(--line);border-radius:16px;overflow:hidden;position:relative;transition:transform .2s,border-color .2s,box-shadow .2s,opacity .2s;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);animation:cardIn .4s both}
 @keyframes cardIn{from{opacity:0;transform:translateY(12px) scale(.98)}}
 .vcard:hover{border-color:#3a4757;transform:translateY(-3px);box-shadow:0 12px 28px rgba(0,0,0,.35)}
 .vcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--dc,#4da3ff);z-index:3}
+.vcard.dragging{opacity:.4;transform:scale(.97)}
 .vph{position:relative;aspect-ratio:16/10;background:#141a23;cursor:pointer;overflow:hidden}
 .vph.empty{background:#12161e}
 .vph img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in;animation:fadeIn .4s}
@@ -106,6 +109,23 @@ textarea.inp{resize:vertical}
 [contenteditable]:focus{background:#141a23;box-shadow:0 0 0 3px rgba(77,163,255,.14)}
 [contenteditable]:empty::before{content:attr(data-ph);color:#4a5462}
 .empty{padding:26px;text-align:center;color:var(--mut);border:1px dashed var(--line);border-radius:12px;margin-top:10px}
+
+/* ── секции классов (Основной автопарк) ── */
+.gsec{margin:0 0 24px;border-radius:14px;padding:10px;transition:background .2s,outline-color .2s;outline:2px dashed transparent;outline-offset:2px}
+.gsec.dragover{outline-color:var(--gc,#4da3ff);background:rgba(77,163,255,.05)}
+.ghead{display:flex;align-items:center;gap:10px;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:800;margin-bottom:11px}
+.ghead .gd{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+.ghead .gname{white-space:nowrap}
+.ghead .gline{flex:1;height:1px;background:linear-gradient(90deg,#27303d,transparent)}
+.ghint{font-size:10px;color:#5b6675;font-weight:600;letter-spacing:.5px;text-transform:none;white-space:nowrap}
+.ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}
+.gempty{min-height:64px;display:flex;align-items:center;justify-content:center;border:1px dashed #232b37;border-radius:12px;color:#5b6675;font-size:12px}
+
+/* ── выбор класса в модалке ── */
+.clsgrid{display:flex;flex-direction:column;gap:8px}
+.clsbtn{display:flex;align-items:center;gap:10px;padding:13px 16px;border-radius:12px;border:1px solid var(--line);background:linear-gradient(145deg,#1c2432,#181e28);color:var(--txt);font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s;text-align:left}
+.clsbtn:hover{border-color:var(--cc,var(--acc));transform:translateX(3px)}
+.clsbtn.on{border-color:var(--cc,var(--acc));background:var(--ccb,rgba(77,163,255,.14));box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
 
 /* ── скелетон загрузки ── */
 .vcard.sk{pointer-events:none;cursor:default}
@@ -175,7 +195,10 @@ h1{font-size:20px}
 .chips::-webkit-scrollbar{display:none}
 .chip{flex:0 0 auto;white-space:nowrap}
 .ctl .inp{width:100%}
-.vgrid{grid-template-columns:repeat(2,1fr);gap:10px}
+.vgrid,.ggrid{grid-template-columns:repeat(2,1fr);gap:10px}
+.gsec{padding:6px;margin-bottom:16px}
+.ghead{gap:7px;font-size:10px}
+.ghint{display:none}
 .vcard{border-radius:14px}
 .vph{aspect-ratio:16/11}
 .vph-empty{inset:8px}
@@ -187,6 +210,7 @@ h1{font-size:20px}
 .vdesc{font-size:10.5px;line-height:1.45}
 .vsp b{font-size:12.5px}
 .vsp{margin-top:8px;padding-top:7px}
+.gempty{min-height:52px;font-size:11px}
 .back{padding:10px;align-items:stretch}
 .modal{max-height:calc(100vh - 20px);border-radius:16px}
 .m-head{padding:16px 16px 12px}
@@ -201,7 +225,7 @@ h1{font-size:20px}
 #troot{right:10px;left:10px;bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 .toast{max-width:none}
 }
-@media(max-width:360px){.vgrid{grid-template-columns:1fr}}
+@media(max-width:360px){.vgrid,.ggrid{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -319,6 +343,24 @@ var DEPS=[
 ];
 function dep(k){for(var i=0;i<DEPS.length;i++){if(DEPS[i].k===k){return DEPS[i]}}return DEPS[0]}
 
+/* ============ КЛАССЫ МАШИН (Основной автопарк) ============ */
+var CLASSES=[
+ {k:'premium', n:'Премиум',       c:'#f7c948'},
+ {k:'high',    n:'Высший класс',  c:'#c084fc'},
+ {k:'standard',n:'Стандарт',      c:'#4da3ff'},
+ {k:'budget',  n:'Бюджет',        c:'#8b95a7'},
+ {k:'special', n:'Спецтранспорт', c:'#ff9a3d'}
+];
+var CLS_MAP={};for(var ci=0;ci<CLASSES.length;ci++){CLS_MAP[CLASSES[ci].k]=CLASSES[ci]}
+function clName(k){return CLS_MAP[k]?CLS_MAP[k].n:'Стандарт'}
+function clColor(k){return CLS_MAP[k]?CLS_MAP[k].c:'#4da3ff'}
+function isGrouped(){return state.kind==='cars'&&state.cat==='main'}
+/* класс карточки: задан или «Стандарт» по умолчанию (для старых данных) */
+function clsOf(it){
+ if(!it||it.kind!=='cars'||it.cat!=='main'){return null}
+ return (it.cls&&CLS_MAP[it.cls])?it.cls:'standard';
+}
+
 var CATS={
  cars:[
   {k:'main', ic:'🏛️', n:'Основной автопарк фракции'},
@@ -339,18 +381,18 @@ var adminMode=false;
 var booted=false;
 
 function seed(){return [
- {id:'c1', kind:'cars',cat:'main', dep:'uvd',  name:'Lada Vesta',                desc:'Патрульный автомобиль ППС · базовая комплектация', speed:'178', photo:''},
- {id:'c2', kind:'cars',cat:'main', dep:'uvd',  name:'УАЗ Патриот',               desc:'Автомобиль руководящего состава УМВД',             speed:'140', photo:''},
- {id:'c3', kind:'cars',cat:'main', dep:'uvd',  name:'ГАЗель Next',               desc:'Спецтранспорт для перевозки группы задержания',    speed:'120', photo:''},
- {id:'c4', kind:'cars',cat:'main', dep:'gibdd',name:'Lada Priora',               desc:'Патрульный автомобиль ДПС · с маячками',           speed:'183', photo:''},
- {id:'c5', kind:'cars',cat:'main', dep:'gibdd',name:'Kia Rio',                   desc:'Автомобиль дорожно-патрульной службы',             speed:'180', photo:''},
- {id:'c6', kind:'cars',cat:'main', dep:'gibdd',name:'Skoda Octavia',             desc:'Оперативный автомобиль ДПС',                       speed:'190', photo:''},
- {id:'c7', kind:'cars',cat:'main', dep:'cgb',  name:'ГАЗель Next · Реанимобиль', desc:'Класс C · оборудование интенсивной терапии',       speed:'120', photo:''},
- {id:'c8', kind:'cars',cat:'main', dep:'cgb',  name:'Ford Transit · Скорая',     desc:'Санитарный автомобиль ЦГБ',                        speed:'140', photo:''},
- {id:'c9', kind:'cars',cat:'main', dep:'vs',   name:'УАЗ Хантер',                desc:'Патрульный автомобиль комендатуры',                speed:'120', photo:''},
- {id:'c10',kind:'cars',cat:'main', dep:'vs',   name:'КАМАЗ-43118',               desc:'Грузовой автомобиль обеспечения',                  speed:'90',  photo:''},
- {id:'c11',kind:'cars',cat:'main', dep:'rzd',  name:'УАЗ Патриот',               desc:'Машина сопровождения и охраны объектов РЖД',       speed:'140', photo:''},
- {id:'c12',kind:'cars',cat:'main', dep:'rzd',  name:'Ford Transit',              desc:'Транспорт ведомственной службы',                   speed:'135', photo:''},
+ {id:'c1', kind:'cars',cat:'main', dep:'uvd',  cls:'standard',name:'Lada Vesta',                desc:'Патрульный автомобиль ППС · базовая комплектация', speed:'178', photo:''},
+ {id:'c2', kind:'cars',cat:'main', dep:'uvd',  cls:'special', name:'УАЗ Патриот',               desc:'Автомобиль руководящего состава УМВД',             speed:'140', photo:''},
+ {id:'c3', kind:'cars',cat:'main', dep:'uvd',  cls:'special', name:'ГАЗель Next',               desc:'Спецтранспорт для перевозки группы задержания',    speed:'120', photo:''},
+ {id:'c4', kind:'cars',cat:'main', dep:'gibdd',cls:'budget',  name:'Lada Priora',               desc:'Патрульный автомобиль ДПС · с маячками',           speed:'183', photo:''},
+ {id:'c5', kind:'cars',cat:'main', dep:'gibdd',cls:'standard',name:'Kia Rio',                   desc:'Автомобиль дорожно-патрульной службы',             speed:'180', photo:''},
+ {id:'c6', kind:'cars',cat:'main', dep:'gibdd',cls:'high',    name:'Skoda Octavia',             desc:'Оперативный автомобиль ДПС',                       speed:'190', photo:''},
+ {id:'c7', kind:'cars',cat:'main', dep:'cgb',  cls:'special', name:'ГАЗель Next · Реанимобиль', desc:'Класс C · оборудование интенсивной терапии',       speed:'120', photo:''},
+ {id:'c8', kind:'cars',cat:'main', dep:'cgb',  cls:'special', name:'Ford Transit · Скорая',     desc:'Санитарный автомобиль ЦГБ',                        speed:'140', photo:''},
+ {id:'c9', kind:'cars',cat:'main', dep:'vs',   cls:'special', name:'УАЗ Хантер',                desc:'Патрульный автомобиль комендатуры',                speed:'120', photo:''},
+ {id:'c10',kind:'cars',cat:'main', dep:'vs',   cls:'special', name:'КАМАЗ-43118',               desc:'Грузовой автомобиль обеспечения',                  speed:'90',  photo:''},
+ {id:'c11',kind:'cars',cat:'main', dep:'rzd',  cls:'special', name:'УАЗ Патриот',               desc:'Машина сопровождения и охраны объектов РЖД',       speed:'140', photo:''},
+ {id:'c12',kind:'cars',cat:'main', dep:'rzd',  cls:'special', name:'Ford Transit',              desc:'Транспорт ведомственной службы',                   speed:'135', photo:''},
  {id:'c13',kind:'cars',cat:'event',dep:'fsb',  name:'Toyota Camry',              desc:'Служебный автомобиль оперативной группы',          speed:'210', photo:''},
  {id:'c14',kind:'cars',cat:'event',dep:'fsb',  name:'Volkswagen Passat',         desc:'Немаркированный оперативный автомобиль',           speed:'205', photo:''},
  {id:'c15',kind:'cars',cat:'event',dep:'sk',   name:'Hyundai Solaris',           desc:'Автомобиль следственной группы',                   speed:'185', photo:''},
@@ -650,9 +692,7 @@ function startPoll(){
  document.addEventListener('visibilitychange',function(){ if(!document.hidden){rawTick();apiTick(true)} });
 }
 
-/* ============ ЗАГРУЗКА СТРАНИЦЫ (без «мигания» старых данных) ============
-   Пока данные не получены с сервера — показывается скелетон.
-   Список отрисовывается ОДИН раз, уже с актуальными данными.     */
+/* ============ ЗАГРУЗКА СТРАНИЦЫ ============ */
 function showSkeleton(){
  var h='';
  for(var i=0;i<10;i++){
@@ -700,7 +740,6 @@ function initRemote(){
   finishBoot('err','Нет связи');
  });
 }
-/* сначала подтверждаем сессию владельца, потом один раз рисуем всё */
 function finishBoot(cls,txt){
  restoreSession(function(){
   booted=true;
@@ -782,7 +821,7 @@ var state={kind:'cars',cat:'main',dep:'all',q:''};
 function setKind(k){
  state.kind=k;state.cat='main';state.dep='all';state.q='';$('#q').value='';
  qsa('.tab').forEach(function(t){t.classList.toggle('on',t.dataset.kind===k)});
- if(!booted){return}          /* данные ещё грузятся — нарисуем позже, сразу правильные */
+ if(!booted){return}
  refade();render();
 }
 function setCat(c){state.cat=c;state.dep='all';render()}
@@ -792,9 +831,11 @@ function refade(){var c=$('#content');c.style.animation='none';void c.offsetWidt
 function renderHead(){
  var isCars=state.kind==='cars';
  $('#hTitle').textContent=isCars?'Автопарк':'Форма';
- $('#hSub').textContent=isCars
+ var sub=isCars
   ?'Транспортные средства · нажмите на пустое окно фото, чтобы загрузить изображение'
   :(adminMode?'Форма одежды · нажмите на пустое окно фото, чтобы загрузить изображение':'Форма одежды ведомств');
+ if(isCars&&isGrouped()&&adminMode){sub+=' · перетащите машину за фото в другой класс'}
+ $('#hSub').textContent=sub;
  $('#cnt').textContent=countItems(state.kind,state.cat,null);
  $('#logoIc').textContent=isCars?'🚔':'🎽';
  $('#tbTitle').textContent=isCars?'МВД · АВТОПАРК':'МВД · ФОРМА';
@@ -822,8 +863,8 @@ function renderChips(){
  $('#chips').innerHTML=h;
 }
 function cardHtml(it,i){
- var d=dep(it.dep),A=adminMode;
- var ph,tools='',ce='';
+ var d=dep(it.dep),A=adminMode,G=isGrouped();
+ var ph,tools='',ce='',drag='';
  if(it.photo){
   ph='<img src="'+it.photo+'" alt="">';
  }else if(A){
@@ -834,13 +875,15 @@ function cardHtml(it,i){
  if(A){
   ce=' contenteditable="true" spellcheck="false"';
   tools='<div class="vph-tools">'+
+   (G?'<button class="vtool vtool-cls" title="Изменить класс">⇄</button>':'')+
    '<button class="vtool vtool-sw" title="Загрузить / сменить фото">↻</button>'+
    '<button class="vtool vtool-del" title="Удалить карточку">✕</button></div>';
+  if(G){drag=' draggable="true"'}
  }
  var sp=it.kind==='cars'?
   '<div class="vsp"><span class="l">Скорость</span><b class="vnum"'+ce+' data-ph="—">'+esc(it.speed)+'</b><i>км/ч</i></div>':'';
  return '<div class="vcard" style="--dc:'+d.c+';animation-delay:'+Math.min(i*28,340)+'ms" data-id="'+it.id+'">'+
-  '<div class="vph'+(it.photo?'':' empty')+'">'+ph+
+  '<div class="vph'+(it.photo?'':' empty')+'"'+drag+(drag?' title="Перетащите в другой класс"':'')+'>'+ph+
    '<span class="vdep" style="color:'+d.c+';border-color:'+d.c+'55;background:'+hex2rgba(d.c,.14)+'">'+esc(d.s)+'</span>'+tools+
   '</div>'+
   '<div class="vbody">'+
@@ -850,7 +893,7 @@ function cardHtml(it,i){
   '</div>'+
  '</div>';
 }
-function renderGrid(){
+function filterList(){
  var list=[],q=state.q.toLowerCase();
  for(var i=0;i<ITEMS.length;i++){
   var it=ITEMS[i];
@@ -859,8 +902,42 @@ function renderGrid(){
   if(q&&(it.name+' '+it.desc).toLowerCase().indexOf(q)<0){continue}
   list.push(it);
  }
+ return list;
+}
+function renderGrid(){
+ var list=filterList();
+ var vg=$('#vgrid');
+ if(isGrouped()){
+  /* Основной автопарк: секции по классам */
+  vg.classList.add('grouped');
+  var h='',delay=0;
+  for(var g=0;g<CLASSES.length;g++){
+   var cl=CLASSES[g],sub=[];
+   for(var i=0;i<list.length;i++){ if(clsOf(list[i])===cl.k){sub.push(list[i])} }
+   h+='<div class="gsec" data-cls="'+cl.k+'" style="--gc:'+cl.c+'">'+
+    '<div class="ghead">'+
+     '<span class="gd" style="background:'+cl.c+';box-shadow:0 0 8px '+cl.c+'66"></span>'+
+     '<span class="gname" style="color:'+cl.c+'">'+cl.n+'</span>'+
+     '<b class="cn">'+sub.length+'</b>'+
+     '<span class="gline"></span>'+
+     (adminMode?'<span class="ghint">перетащите машины сюда</span>':'')+
+    '</div>';
+   if(sub.length){
+    h+='<div class="ggrid">';
+    for(var s=0;s<sub.length;s++){ h+=cardHtml(sub[s],delay++) }
+    h+='</div>';
+   }else{
+    h+='<div class="gempty">'+(adminMode?'Пусто — перетащите сюда карточку':'Пока нет машин')+'</div>';
+   }
+   h+='</div>';
+  }
+  $('#vempty').style.display='none';
+  vg.innerHTML=h;
+  return;
+ }
+ vg.classList.remove('grouped');
  if(!list.length){
-  $('#vgrid').innerHTML='';
+  vg.innerHTML='';
   $('#vempty').style.display='block';
   var any=countItems(state.kind,state.cat,null);
   $('#vempty').textContent=any
@@ -868,7 +945,7 @@ function renderGrid(){
    :(state.kind==='cars'?'В этой категории пока нет машин':'В этой категории пока нет формы');
  }else{
   $('#vempty').style.display='none';
-  $('#vgrid').innerHTML=list.map(cardHtml).join('');
+  vg.innerHTML=list.map(cardHtml).join('');
  }
 }
 function render(){renderTop();renderHead();renderCats();renderChips();renderGrid()}
@@ -914,8 +991,71 @@ function compress(im){
  }
 }
 
-/* ============ КЛИКИ ПО СЕТКЕ ============ */
+/* ============ ПЕРЕТАСКИВАНИЕ КАРТОЧЕК МЕЖДУ КЛАССАМИ ============ */
 var vgrid=$('#vgrid');
+function dragHasFiles(e){
+ return !!(e.dataTransfer&&e.dataTransfer.types&&Array.prototype.indexOf.call(e.dataTransfer.types,'Files')>-1);
+}
+vgrid.addEventListener('dragstart',function(e){
+ if(!adminMode||!isGrouped()){return}
+ var ph=e.target.closest?e.target.closest('.vph'):null;
+ var card=ph?ph.closest('.vcard'):null;
+ if(!card||card.classList.contains('sk')){return}
+ try{ e.dataTransfer.setData('text/plain',card.dataset.id) }catch(err){}
+ e.dataTransfer.effectAllowed='move';
+ qsa('.vcard.dragging',vgrid).forEach(function(x){x.classList.remove('dragging')});
+ card.classList.add('dragging');
+});
+vgrid.addEventListener('dragend',function(){
+ qsa('.vcard.dragging',vgrid).forEach(function(x){x.classList.remove('dragging')});
+ qsa('.gsec.dragover',vgrid).forEach(function(x){x.classList.remove('dragover')});
+});
+vgrid.addEventListener('dragover',function(e){
+ if(!adminMode){return}
+ if(isGrouped()&&!dragHasFiles(e)){
+  /* переносим карточку между классами */
+  var sec=e.target.closest('.gsec');
+  qsa('.gsec.dragover',vgrid).forEach(function(x){x.classList.remove('dragover')});
+  qsa('.vph.drag',vgrid).forEach(function(x){x.classList.remove('drag')});
+  if(sec){e.preventDefault();e.dataTransfer.dropEffect='move';sec.classList.add('dragover')}
+  return;
+ }
+ /* перетаскивание файла-фото на карточку */
+ qsa('.gsec.dragover',vgrid).forEach(function(x){x.classList.remove('dragover')});
+ var ph=e.target.closest('.vph');
+ qsa('.vph.drag',vgrid).forEach(function(x){x.classList.remove('drag')});
+ if(ph){e.preventDefault();ph.classList.add('drag')}
+});
+vgrid.addEventListener('drop',function(e){
+ if(!adminMode){return}
+ if(isGrouped()&&!dragHasFiles(e)){
+  /* карточка брошена на секцию класса */
+  var sec=e.target.closest('.gsec');
+  qsa('.gsec.dragover',vgrid).forEach(function(x){x.classList.remove('dragover')});
+  qsa('.vcard.dragging',vgrid).forEach(function(x){x.classList.remove('dragging')});
+  if(!sec){return}
+  e.preventDefault();
+  var id='';
+  try{ id=e.dataTransfer.getData('text/plain') }catch(err){}
+  if(!id){return}
+  var it=byId(id);
+  if(!it){return}
+  var g=sec.dataset.cls;
+  if(clsOf(it)!==g){
+   var oldName=clName(clsOf(it));
+   it.cls=g;
+   commit();render();
+   toast('«'+(it.name||'без названия')+'»: '+oldName+' → '+clName(g));
+  }
+  return;
+ }
+ /* файл-фото брошен на карточку */
+ var ph=e.target.closest('.vph'),card=e.target.closest('.vcard');
+ qsa('.vph.drag',vgrid).forEach(function(x){x.classList.remove('drag')});
+ if(ph&&card){e.preventDefault();var f=e.dataTransfer.files[0];if(f){loadFile(f,'item',card.dataset.id)}}
+});
+
+/* ============ КЛИКИ ПО СЕТКЕ ============ */
 vgrid.addEventListener('click',function(e){
  var t=e.target,card=t.closest('.vcard');if(!card){return}
  var id=card.dataset.id;
@@ -924,6 +1064,7 @@ vgrid.addEventListener('click',function(e){
   return;
  }
  if(t.closest('.vtool-del')){askDel(id);return}
+ if(t.closest('.vtool-cls')){askClass(id);return}
  if(t.closest('.vtool-sw')){pickPhoto('item',id);return}
  var ph=t.closest('.vph');
  if(ph){
@@ -957,22 +1098,37 @@ vgrid.addEventListener('paste',function(e){
  document.execCommand('insertText',false,t);
 },true);
 
-vgrid.addEventListener('dragover',function(e){
- if(!adminMode){return}
- var ph=e.target.closest('.vph');
- qsa('.vph.drag').forEach(function(x){x.classList.remove('drag')});
- if(ph){e.preventDefault();ph.classList.add('drag')}
-});
-vgrid.addEventListener('drop',function(e){
- if(!adminMode){return}
- var ph=e.target.closest('.vph'),card=e.target.closest('.vcard');
- qsa('.vph.drag').forEach(function(x){x.classList.remove('drag')});
- if(ph&&card){e.preventDefault();var f=e.dataTransfer.files[0];if(f){loadFile(f,'item',card.dataset.id)}}
-});
 document.addEventListener('dragover',function(e){e.preventDefault()});
 document.addEventListener('drop',function(e){e.preventDefault()});
 
  $('#q').addEventListener('input',function(){ if(!booted){return} state.q=this.value.trim();renderGrid() });
+
+/* ============ ВЫБОР КЛАССА ЧЕРЕЗ КНОПКУ ============ */
+function askClass(id){
+ if(!adminMode){return}
+ var it=byId(id);if(!it){return}
+ var cur=clsOf(it);
+ var h='';
+ for(var i=0;i<CLASSES.length;i++){
+  h+='<button class="clsbtn'+(CLASSES[i].k===cur?' on':'')+'" style="--cc:'+CLASSES[i].c+';--ccb:'+hex2rgba(CLASSES[i].c,.14)+'" onclick="setCls(\''+id+'\',\''+CLASSES[i].k+'\')">'+
+     '<span class="dot" style="background:'+CLASSES[i].c+'"></span>'+CLASSES[i].n+
+     (CLASSES[i].k===cur?'<b class="cn" style="margin-left:auto">текущий</b>':'')+
+     '</button>';
+ }
+ $('#croot').innerHTML=
+ '<div class="back" onclick="if(event.target===this)closeC()"><div class="modal smw">'+
+  '<div class="m-head"><div class="mh-nm" style="font-size:16px">Класс машины</div>'+
+  '<div class="mh-sub">«'+esc(it.name||'Без названия')+'» — выберите группу:</div></div>'+
+  '<div class="m-body"><div class="clsgrid">'+h+'</div></div>'+
+  '<div class="m-foot"><button class="btn ghost" onclick="closeC()">Отмена</button></div>'+
+ '</div></div>';
+}
+function setCls(id,cls){
+ var it=byId(id);if(!it){closeC();return}
+ it.cls=cls;
+ closeC();commit();render();
+ toast('«'+(it.name||'без названия')+'» → '+clName(cls));
+}
 
 /* ============ ЛАЙТБОКС ============ */
 function openLB(id){
@@ -1003,6 +1159,12 @@ function fillMDeps(cat,sel){
  var el=$('#fDep');el.innerHTML=o;
  if(sel){for(var j=0;j<DEPS.length;j++){if(DEPS[j].k===sel&&DEPS[j].cat===cat){el.value=sel;break}}}
 }
+function updClsRow(){
+ var row=$('#clsRow');
+ if(!row){return}
+ var show=(state.kind==='cars'&&$('#fCat')&&$('#fCat').value==='main');
+ row.style.display=show?'':'none';
+}
 function openAdd(){
  if(!adminMode){return}
  addPhoto=null;
@@ -1012,6 +1174,10 @@ function openAdd(){
  for(var i=0;i<a.length;i++){
   catOpts+='<option value="'+a[i].k+'"'+(a[i].k===state.cat?' selected':'')+'>'+esc(a[i].n)+'</option>';
  }
+ var clsOpts='';
+ for(var c2=0;c2<CLASSES.length;c2++){
+  clsOpts+='<option value="'+CLASSES[c2].k+'"'+(CLASSES[c2].k==='standard'?' selected':'')+'">'+CLASSES[c2].n+'</option>';
+ }
  $('#mroot').innerHTML=
  '<div class="back" onclick="if(event.target===this)closeM()"><div class="modal" style="max-width:580px">'+
   '<div class="m-head"><div class="mh-nm" style="font-size:17px">'+(isCars?'Новая машина':'Новая форма')+'</div>'+
@@ -1020,8 +1186,9 @@ function openAdd(){
   '<div class="m-body">'+
    '<div class="aph" id="aph"><div class="aph-in" id="aphIn"><span class="aph-ic">🖼️</span><b>Загрузить фото</b><span>клик или перетащите файл сюда</span></div></div>'+
    '<div class="formgrid" style="margin-top:16px">'+
-    '<div><label class="flab">Категория</label><select class="sel" id="fCat" style="width:100%" onchange="fillMDeps(this.value)">'+catOpts+'</select></div>'+
+    '<div><label class="flab">Категория</label><select class="sel" id="fCat" style="width:100%" onchange="fillMDeps(this.value);updClsRow()">'+catOpts+'</select></div>'+
     '<div><label class="flab">Ведомство</label><select class="sel" id="fDep" style="width:100%"></select></div>'+
+    (isCars?'<div id="clsRow"><label class="flab">Класс</label><select class="sel" id="fCls" style="width:100%">'+clsOpts+'</select></div>':'')+
     (isCars?'<div><label class="flab">Макс. скорость, км/ч</label><input class="inp" id="fSp" style="width:100%" placeholder="напр. 180"></div>':'')+
     '<div class="full"><label class="flab">Название</label><input class="inp" id="fName" style="width:100%" placeholder="'+(isCars?'напр. Lada Vesta · ДПС':'напр. Летняя форма')+'"></div>'+
     '<div class="full"><label class="flab">Описание</label><textarea class="inp" id="fDesc" rows="3" style="width:100%" placeholder="'+(isCars?'Подразделение, назначение, комплектация…':'Комплектация, сезон, особенности…')+'"></textarea></div>'+
@@ -1031,6 +1198,7 @@ function openAdd(){
   '<button class="btn" onclick="submitAdd()">'+(isCars?'Добавить машину':'Добавить форму')+'</button></div>'+
  '</div></div>';
  fillMDeps(state.cat,state.dep);
+ updClsRow();
  var aph=$('#aph');
  aph.addEventListener('click',function(e){if(e.target.tagName!=='IMG'){pickPhoto('add',null)}});
  aph.addEventListener('dragover',function(e){e.preventDefault();aph.classList.add('drag')});
@@ -1045,11 +1213,13 @@ function submitAdd(){
  if(!adminMode){return}
  var name=$('#fName').value.trim();
  if(!name){toast(state.kind==='cars'?'Введите название машины':'Введите название формы',true);$('#fName').focus();return}
+ var isMain=state.kind==='cars'&&$('#fCat').value==='main';
  ITEMS.unshift({
   id:'n'+Date.now()+Math.floor(Math.random()*999),
   kind:state.kind,
   cat:$('#fCat').value,
   dep:$('#fDep').value,
+  cls:(isMain&&$('#fCls'))?$('#fCls').value:'',
   name:name,
   desc:$('#fDesc').value.trim(),
   speed:state.kind==='cars'&&$('#fSp')?$('#fSp').value.trim():'',
@@ -1067,7 +1237,7 @@ function askDel(id){
  if(!adminMode){return}
  var it=byId(id);if(!it){return}
  var d=dep(it.dep);
- var info='<i class="lbdot" style="background:'+d.c+'"></i>'+esc(d.n)+(it.kind==='cars'&&it.speed?' · '+esc(it.speed)+' км/ч':'');
+ var info='<i class="lbdot" style="background:'+d.c+'"></i>'+esc(d.n)+(it.kind==='cars'&&it.speed?' · '+esc(it.speed)+' км/ч':'')+(clsOf(it)?'<br>Класс: '+clName(clsOf(it)):'');
  $('#croot').innerHTML=
  '<div class="back" onclick="if(event.target===this)closeC()"><div class="modal smw">'+
   '<div class="m-head"><div class="mh-nm" style="font-size:16px">Удалить карточку?</div>'+
@@ -1092,7 +1262,7 @@ document.addEventListener('keydown',function(e){
 
 /* ============ СТАРТ ============ */
 if(REPO){
- initRemote();          /* скелетон → данные с сервера → одна отрисовка */
+ initRemote();
 }else{
  ITEMS=loadLocal();
  render();
