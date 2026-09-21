@@ -20,7 +20,6 @@ button{touch-action:manipulation}
 .tb-left{display:flex;align-items:center;gap:12px;min-width:0}
 .logo-ic{width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,#33578b,#17304f);display:flex;align-items:center;justify-content:center;font-size:17px;border:1px solid #3d557f;box-shadow:0 4px 14px rgba(30,80,160,.28);flex:0 0 34px}
 .tb-title{font-weight:800;letter-spacing:1.5px;font-size:13px;background:linear-gradient(90deg,#eaf2ff,#9fc4ee);-webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ver{font-size:9px;font-weight:700;color:#5b6675;letter-spacing:.5px;margin-left:6px;-webkit-text-fill-color:#5b6675}
 .tb-right{display:flex;align-items:center;gap:10px}
 .sync{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;color:var(--mut);white-space:nowrap}
 .sync i{width:8px;height:8px;border-radius:50%;background:#55606f;transition:background .3s,box-shadow .3s}
@@ -107,6 +106,15 @@ textarea.inp{resize:vertical}
 [contenteditable]:focus{background:#141a23;box-shadow:0 0 0 3px rgba(77,163,255,.14)}
 [contenteditable]:empty::before{content:attr(data-ph);color:#4a5462}
 .empty{padding:26px;text-align:center;color:var(--mut);border:1px dashed var(--line);border-radius:12px;margin-top:10px}
+
+/* ── скелетон загрузки ── */
+.vcard.sk{pointer-events:none;cursor:default}
+.vcard.sk::before{display:none}
+.skph{aspect-ratio:16/10;background:#161c26;position:relative;overflow:hidden}
+.skph::after,.skb::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 25%,rgba(255,255,255,.05) 50%,transparent 75%);transform:translateX(-100%);animation:skmove 1.4s infinite}
+@keyframes skmove{to{transform:translateX(100%)}}
+.skb{height:11px;border-radius:6px;background:#161c26;margin:10px 14px 0;position:relative;overflow:hidden}
+.skb:last-child{margin-bottom:14px}
 
 #lb{position:fixed;inset:0;z-index:600;background:rgba(4,7,11,0);backdrop-filter:blur(0);display:flex;align-items:center;justify-content:center;padding:26px;cursor:zoom-out;opacity:0;transition:opacity .22s,backdrop-filter .22s;pointer-events:none}
 #lb.show{opacity:1;background:rgba(4,7,11,.88);backdrop-filter:blur(9px);pointer-events:auto}
@@ -209,7 +217,7 @@ window.addEventListener('error',function(ev){
 <header id="topbar">
   <div class="tb-left">
     <div class="logo-ic" id="logoIc">🚔</div>
-    <div class="tb-title"><span id="tbTitle">МВД · АВТОПАРК</span><span class="ver">v8</span></div>
+    <div class="tb-title" id="tbTitle">МВД · АВТОПАРК</div>
   </div>
   <div class="tb-right">
     <div class="sync" id="sync"><i></i><span id="syncTxt">Локально</span></div>
@@ -325,9 +333,10 @@ function catName(kind,cat){var a=CATS[kind];for(var i=0;i<a.length;i++){if(a[i].
 
 /* ============ ДАННЫЕ / СИДЫ ============ */
 var LOCAL_K='mvd_garage_local', CACHE_K='mvd_garage_cache', KEY_K='mvd_garage_admin_key', PENDING_K='mvd_garage_pending';
-var ITEMS, localRev=0, pendingRev=null, needSeed=false;
+var ITEMS=[], localRev=0, pendingRev=null, needSeed=false;
 var ADMIN_KEY=LS.get(KEY_K)||'';
 var adminMode=false;
+var booted=false;
 
 function seed(){return [
  {id:'c1', kind:'cars',cat:'main', dep:'uvd',  name:'Lada Vesta',                desc:'Патрульный автомобиль ППС · базовая комплектация', speed:'178', photo:''},
@@ -410,51 +419,51 @@ function loadCache(){
 function byId(id){for(var i=0;i<ITEMS.length;i++){if(ITEMS[i].id===id){return ITEMS[i]}}return null}
 function countItems(kind,cat,dp){var n=0;for(var i=0;i<ITEMS.length;i++){var it=ITEMS[i];if(it.kind===kind&&it.cat===cat&&(dp===null||it.dep===dp)){n++}}return n}
 
-/* ============ СИНХРОНИЗАЦИЯ ЧЕРЕЗ GITHUB (Contents API) ============
-   Запись: 1–2 PUT-запроса напрямую в файлы репозитория — быстро (~1 сек).
-   Чтение: всегда напрямую через api.github.com (без CDN-кэша) —
-   страница показывает ровно то, что записано на сервере.               */
+/* ============ СИНХРОНИЗАЦИЯ ============ */
 function setSync(cls,txt){
  var s=$('#sync');
  s.className='sync '+(cls||'');
  if(txt){$('#syncTxt').textContent=txt}
 }
-function ghApi(path,opts,auth){
- var h={Accept:'application/vnd.github+json'};
- if(auth&&ADMIN_KEY){h.Authorization='token '+ADMIN_KEY}
- if(opts&&opts.body){h['Content-Type']='application/json'}
- return fetch('https://api.github.com/repos/'+REPO+'/'+path+(path.indexOf('?')<0?'?':'&')+'t='+Date.now(),{
-  method:(opts&&opts.method)||'GET',
-  headers:h,
-  cache:'no-store',
-  body:opts&&opts.body?JSON.stringify(opts.body):undefined
- }).then(function(r){
-  if(r.status===404){var e=new Error(404);e.nf=true;throw e}
-  if(r.status===403&&!(auth&&ADMIN_KEY)){var e2=new Error(403);e2.rl=true;throw e2}
-  if(!r.ok){throw r.status}
-  return r.status===204?null:r.json();
- });
-}
-/* rev.txt: "N" или "N:shaDataJson". Читаем вместе с sha самого файла —
-   это и версия данных, и всё нужное для быстрой записи. */
-function fetchRevMeta(auth){
- return ghApi('contents/rev.txt?ref='+BRANCH,null,auth).then(function(j){
-  var txt='';
-  try{txt=atob(String(j.content||'').replace(/\s/g,''))}catch(e){}
-  var i=txt.indexOf(':'),rev=parseInt(txt,10)||0,sha=null;
-  if(i>=0){sha=txt.substring(i+1).trim()}
-  return {rev:rev,sha:sha,revSha:j.sha};
- });
-}
-function apiBlobText(sha,auth){
- return ghApi('git/blobs/'+sha,null,auth).then(function(j){return b64d(j.content)});
-}
+function rawUrl(file,br){return 'https://raw.githubusercontent.com/'+REPO+'/'+(br||BRANCH)+'/'+file+'?v='+Date.now()}
 function rawGet(file,br){
- return fetch('https://raw.githubusercontent.com/'+REPO+'/'+(br||BRANCH)+'/'+file+'?v='+Date.now(),{cache:'no-store'}).then(function(r){
+ return fetch(rawUrl(file,br),{cache:'no-store'}).then(function(r){
   if(r.status===404){var e=new Error('404');e.nf=true;throw e}
   if(!r.ok){throw new Error(r.status)}
   return r.text();
  });
+}
+function apiText(path,auth){
+ var h={Accept:'application/vnd.github.raw'};
+ if(auth&&ADMIN_KEY){h.Authorization='token '+ADMIN_KEY}
+ return fetch('https://api.github.com/repos/'+REPO+'/contents/'+path+'?t='+Date.now(),{headers:h,cache:'no-store'}).then(function(r){
+  if(!r.ok){var e=new Error(r.status);if(r.status===403&&!(auth&&ADMIN_KEY)){e.rl=true}throw e}
+  return r.text();
+ });
+}
+function apiBlobText(sha){
+ var h={Accept:'application/vnd.github+json'};
+ if(ADMIN_KEY){h.Authorization='token '+ADMIN_KEY}
+ return fetch('https://api.github.com/repos/'+REPO+'/git/blobs/'+sha+'?t='+Date.now(),{headers:h,cache:'no-store'}).then(function(r){
+  if(!r.ok){var e=new Error(r.status);if(r.status===403&&!ADMIN_KEY){e.rl=true}throw e}
+  return r.json();
+ }).then(function(j){return b64d(j.content)});
+}
+function ghHeaders(){return {Authorization:'token '+ADMIN_KEY,Accept:'application/vnd.github+json','Content-Type':'application/json'}}
+function ghReq(method,path,body){
+ return fetch('https://api.github.com/repos/'+REPO+'/'+path,{
+  method:method,headers:ghHeaders(),
+  body:body?JSON.stringify(body):undefined
+ }).then(function(r){
+  if(!r.ok){throw r.status}
+  return r.status===204?null:r.json();
+ });
+}
+function parseRevTxt(t){
+ t=String(t||'').trim();
+ var i=t.indexOf(':');
+ if(i<0){return {rev:parseInt(t,10)||0,sha:null}}
+ return {rev:parseInt(t.substring(0,i),10)||0,sha:t.substring(i+1).trim()};
 }
 function checkToken(tok){
  return fetch('https://api.github.com/user',{headers:{Authorization:'token '+tok}})
@@ -465,29 +474,17 @@ function checkToken(tok){
 
 /* ============ СОХРАНЕНИЕ ============ */
 var pushTimer=null, pushInFlight=false, dataDirty=false, pushRetries=0, pushToastShown=false;
+var lastCommitSha=null, lastTreeSha=null;
 
 function commit(){
- cacheItems();
  if(!REPO){ saveLocal(ITEMS); return }
  if(!adminMode){ return }
  dataDirty=true;
  LS.set(PENDING_K,String(Date.now()));
+ cacheItems();
  if(pushInFlight){ return }
  if(pushTimer){ return }
- pushTimer=setTimeout(doPush,80);            /* старт почти мгновенно */
-}
-
-function treeSha(path){
- return ghApi('git/trees/'+BRANCH,null,true).then(function(t){
-  var out=null;
-  (t.tree||[]).forEach(function(x){if(x.path===path){out=x.sha}});
-  return out;
- });
-}
-function putContent(path,contentB64,sha,message){
- var body={message:message,content:contentB64,branch:BRANCH};
- if(sha){body.sha=sha}
- return ghApi('contents/'+path,{method:'PUT',body:body},true);
+ pushTimer=setTimeout(doPush,100);
 }
 
 function doPush(){
@@ -500,22 +497,37 @@ function doPush(){
  pushInFlight=true;
  setSync('busy','Сохранение…');
  pendingRev=rev;
- var revSha=null,dataSha=null;
- fetchRevMeta(true).then(function(meta){
-  revSha=meta.revSha;
-  dataSha=meta.sha;
-  if(!dataSha&&meta.rev>0){
-   /* старый формат без sha — узнаем актуальный sha файла через дерево */
-   return treeSha('data.json').then(function(s){dataSha=s},function(){});
+ var dataSha=null;
+ ghReq('POST','git/blobs',{content:b64e(snapshot),encoding:'base64'}).then(function(b){
+  dataSha=b.sha;
+  return ghReq('POST','git/blobs',{content:b64e(rev+':'+b.sha),encoding:'base64'});
+ }).then(function(bRev){
+  var tree=[
+   {path:'data.json',mode:'100644',type:'blob',sha:dataSha},
+   {path:'rev.txt',mode:'100644',type:'blob',sha:bRev.sha}
+  ];
+  var base;
+  if(lastCommitSha&&lastTreeSha){
+   base=Promise.resolve({c:lastCommitSha,t:lastTreeSha});
+  }else{
+   base=ghReq('GET','git/refs/heads/'+BRANCH).catch(function(code){
+    if(code===404&&BRANCH!=='master'){BRANCH='master';return ghReq('GET','git/refs/heads/master')}
+    throw code;
+   }).then(function(ref){
+    return ghReq('GET','git/commits/'+ref.object.sha).then(function(cm){
+     return {c:ref.object.sha,t:cm.tree.sha};
+    });
+   });
   }
- },function(e){
-  if(e&&e.nf){return}   /* файлов ещё нет — создадим */
-  throw e;
- }).then(function(){
-  return putContent('data.json',b64e(snapshot),dataSha,'sync: данные '+rev);
- }).then(function(res){
-  var ns=(res&&res.content&&res.content.sha)||null;
-  return putContent('rev.txt',b64e(rev+':'+ns),revSha,'sync: rev '+rev);
+  return base.then(function(b){
+   return ghReq('POST','git/trees',{base_tree:b.t,tree:tree}).then(function(nt){
+    return ghReq('POST','git/commits',{message:'sync: '+rev,tree:nt.sha,parents:[b.c]}).then(function(nc){
+     return ghReq('PATCH','git/refs/heads/'+BRANCH,{sha:nc.sha}).then(function(){
+      lastCommitSha=nc.sha;lastTreeSha=nt.sha;
+     });
+    });
+   });
+  });
  }).then(function(){
   pushInFlight=false;pushRetries=0;pushToastShown=false;
   localRev=rev;pendingRev=null;
@@ -525,21 +537,21 @@ function doPush(){
   if(dataDirty){ pushTimer=setTimeout(doPush,150) }
  }).catch(function(code){
   pushInFlight=false;pendingRev=null;dataDirty=true;
-  var c=(typeof code==='number')?code:(code&&code.message?+code.message||code.message:code);
-  if(c===401){
+  if(code===401){
    setSync('err','Токен недействителен');
    toast('Токен недействителен — войдите заново через 🔒',true);
    return;
   }
-  if((c===409||c===422)&&pushRetries<4){    /* sha устарел — перечитываем и повторяем */
+  if(code===422&&pushRetries<4){
    pushRetries++;
-   pushTimer=setTimeout(doPush,350);
+   lastCommitSha=null;lastTreeSha=null;
+   pushTimer=setTimeout(doPush,300);
    return;
   }
   setSync('err','Не сохранено');
-  var msg=(c===403)?'GitHub отклонил запись (403) — пересоздайте токен с галочкой repo'
-   :(c===404)?'Не найден файл/ветка (404) — напишите мне'
-   :'Не удалось сохранить (ошибка '+c+') — повторю автоматически';
+  var msg=(code===403)?'GitHub отклонил запись (403) — пересоздайте токен с галочкой repo'
+   :(code===404)?'Не найдена ветка/репозиторий (404) — напишите мне'
+   :'Не удалось сохранить (ошибка '+code+') — повторю автоматически';
   if(!pushToastShown){ pushToastShown=true; toast(msg,true) }
   pushRetries++;
   pushTimer=setTimeout(doPush,7000);
@@ -548,18 +560,14 @@ function doPush(){
 
 /* ============ ЧТЕНИЕ ============ */
 function resolveRev(){
- return fetchRevMeta(true).catch(function(e){
+ return apiText('rev.txt',true).catch(function(e){
   if(e&&e.rl){throw e}
-  return fetchRevMeta(false);
+  return apiText('rev.txt',false);
  }).catch(function(e){
   if(e&&e.rl){throw e}
-  return rawGet('rev.txt').then(function(t){
-   var i=String(t).indexOf(':'),rev=parseInt(t,10)||0,sha=null;
-   if(i>=0){sha=t.substring(i+1).trim()}
-   return {rev:rev,sha:sha,revSha:null};
-  });
+  return rawGet('rev.txt').then(function(t){return parseRevTxt(t)});
  }).catch(function(e){
-  if(e&&e.nf){return {rev:0,sha:null,revSha:null}}
+  if(e&&e.nf){return {rev:0,sha:null}}
   throw e;
  });
 }
@@ -574,15 +582,14 @@ function pullData(rv){
   throw new Error('stale');
  }).catch(function(){
   if(rv.sha){
-   return apiBlobText(rv.sha,!!ADMIN_KEY).then(function(txt){
+   return apiBlobText(rv.sha).then(function(txt){
     var j=JSON.parse(txt);
     return {rev:rv.rev,items:toArr(j.items)||[]};
    });
   }
-  return ghApi('contents/data.json?ref='+BRANCH,null,!!ADMIN_KEY).then(function(j){
-   var txt='';try{txt=b64d(String(j.content||'').replace(/\s/g,''))}catch(e){}
-   var d=JSON.parse(txt);
-   return {rev:(typeof d.rev==='number'?d.rev:rv.rev),items:toArr(d.items)||[]};
+  return apiText('data.json',!!ADMIN_KEY).then(function(txt){
+   var j=JSON.parse(txt);
+   return {rev:(typeof j.rev==='number'?j.rev:rv.rev),items:toArr(j.items)||[]};
   });
  });
 }
@@ -590,21 +597,20 @@ function applyData(rev,items){
  ITEMS=items;localRev=rev;cacheItems();render();
 }
 
-/* быстрый канал: raw каждую секунду */
 function rawTick(){
  rawGet('rev.txt').then(function(t){
-  var i=String(t).indexOf(':'),rev=parseInt(t,10)||0;
-  if(rev===localRev){setSync('ok','GitHub');return}
-  if(rev<pendingRev){return}
-  if(rev===pendingRev){return}
-  if(rev<localRev){return}
+  var rv=parseRevTxt(t);
+  if(rv.rev===localRev){setSync('ok','GitHub');return}
+  if(rv.rev<pendingRev){return}
+  if(rv.rev===pendingRev){return}
+  if(rv.rev<localRev){return}
   if(adminMode&&(dataDirty||pushInFlight)){return}
   setSync('busy','Обновление…');
   return rawGet('data.json').then(function(d){
    var j=null;try{j=JSON.parse(d)}catch(e){}
    var items=toArr(j&&j.items);
-   if(items&&(typeof j.rev!=='number'||j.rev>=rev)){
-    applyData((typeof j.rev==='number')?Math.max(j.rev,rev):rev,items);
+   if(items&&(typeof j.rev!=='number'||j.rev>=rv.rev)){
+    applyData((typeof j.rev==='number')?Math.max(j.rev,rv.rev):rv.rev,items);
     setSync('ok','GitHub');
    }else{
     apiTick(true);
@@ -616,8 +622,7 @@ function rawTick(){
  });
 }
 
-/* надёжный канал: API напрямую (владелец — каждые 3 сек, гости — ~раз в минуту) */
-var apiQuietUntil=0,nextViewerApi=0;
+var apiQuietUntil=0, nextViewerApi=0;
 function apiTick(force){
  var now=Date.now();
  if(now<apiQuietUntil){return}
@@ -625,8 +630,9 @@ function apiTick(force){
   if(!force&&now<nextViewerApi){return}
   if(force&&now<nextViewerApi-55000){return}
  }
- fetchRevMeta(!!ADMIN_KEY).then(function(rv){
+ apiText('rev.txt',!!ADMIN_KEY).then(function(t){
   if(!ADMIN_KEY){nextViewerApi=now+75000}
+  var rv=parseRevTxt(t);
   if(rv.rev<=localRev||rv.rev===pendingRev){setSync('ok','GitHub');return}
   if(adminMode&&(dataDirty||pushInFlight)){return}
   setSync('busy','Обновление…');
@@ -644,42 +650,79 @@ function startPoll(){
  document.addEventListener('visibilitychange',function(){ if(!document.hidden){rawTick();apiTick(true)} });
 }
 
-/* ============ ЗАГРУЗКА СТРАНИЦЫ ============ */
+/* ============ ЗАГРУЗКА СТРАНИЦЫ (без «мигания» старых данных) ============
+   Пока данные не получены с сервера — показывается скелетон.
+   Список отрисовывается ОДИН раз, уже с актуальными данными.     */
+function showSkeleton(){
+ var h='';
+ for(var i=0;i<10;i++){
+  h+='<div class="vcard sk" style="animation-delay:'+Math.min(i*60,420)+'ms">'+
+     '<div class="skph"></div>'+
+     '<div class="skb" style="width:78%"></div>'+
+     '<div class="skb" style="width:56%"></div>'+
+     '</div>';
+ }
+ $('#vgrid').innerHTML=h;
+}
 function initRemote(){
  setSync('busy','Подключение…');
+ showSkeleton();
+ var cache=loadCache();
  resolveRev().then(function(rv){
-  var cache=loadCache();
   var noData=(rv===null||rv.nf||rv.rev===0);
   if(noData){
-   if(cache){
-    ITEMS=cache.items;localRev=cache.rev;needSeed=false;
-    if(ADMIN_KEY){dataDirty=true}
-   }else{ needSeed=true }
-   render();setSync('ok','GitHub');startPoll();restoreSession();return;
+   if(cache){ ITEMS=cache.items;localRev=cache.rev;needSeed=false;if(ADMIN_KEY){dataDirty=true} }
+   else{ ITEMS=seed();needSeed=true }
+   finishBoot('ok','GitHub');return;
   }
-  if(ADMIN_KEY&&cache&&cache.rev>rv.rev){
-   /* локальный снимок опережает сервер (пуш прервали) — восстанавливаем и дозапишем */
-   ITEMS=cache.items;localRev=cache.rev;needSeed=false;dataDirty=true;
-   render();setSync('ok','GitHub');startPoll();restoreSession();return;
+  if(cache&&cache.rev>rv.rev){
+   ITEMS=cache.items;localRev=cache.rev;needSeed=false;
+   if(ADMIN_KEY){ dataDirty=true }
+   finishBoot('ok','GitHub');return;
   }
   if(cache&&cache.rev===rv.rev){
    ITEMS=cache.items;localRev=rv.rev;needSeed=false;
-   render();setSync('ok','GitHub');startPoll();restoreSession();return;
+   finishBoot('ok','GitHub');return;
   }
   setSync('busy','Загрузка…');
   pullData(rv).then(function(res){
-   if(res&&res.items){ITEMS=res.items;localRev=res.rev;cacheItems();needSeed=false}
-   else{needSeed=true}
-   render();setSync('ok','GitHub');startPoll();restoreSession();
+   if(res&&res.items){ ITEMS=res.items;localRev=res.rev;cacheItems();needSeed=false }
+   else{ if(cache){ITEMS=cache.items;localRev=cache.rev;needSeed=false}else{ITEMS=seed();needSeed=true} }
+   finishBoot('ok','GitHub');
   }).catch(function(){
    if(cache){ITEMS=cache.items;localRev=cache.rev}
-   render();setSync('err','Нет связи');startPoll();restoreSession();
+   else{ITEMS=loadLocal()}
+   finishBoot('err','Нет связи');
   });
  }).catch(function(){
-  var c=loadCache();
-  if(c){ITEMS=c.items;localRev=c.rev}
-  render();setSync('err','Нет связи');startPoll();restoreSession();
+  if(cache){ITEMS=cache.items;localRev=cache.rev}
+  else{ITEMS=loadLocal()}
+  finishBoot('err','Нет связи');
  });
+}
+/* сначала подтверждаем сессию владельца, потом один раз рисуем всё */
+function finishBoot(cls,txt){
+ restoreSession(function(){
+  booted=true;
+  setSync(cls,txt);
+  render();
+  startPoll();
+ });
+}
+function restoreSession(cb){
+ if(!ADMIN_KEY||!REPO){ if(cb){cb()} return }
+ var done=false;
+ var finish=function(){ if(!done){done=true;if(cb){cb()}} };
+ var to=setTimeout(finish,5000);
+ checkToken(ADMIN_KEY).then(function(ok){
+  if(done){clearTimeout(to);return}
+  clearTimeout(to);done=true;
+  if(ok){
+   adminMode=true;
+   if(needSeed||dataDirty||LS.get(PENDING_K)){ dataDirty=true;doPush() }
+  }else{ ADMIN_KEY='';LS.remove(KEY_K) }
+  if(cb){cb()}
+ },function(){ clearTimeout(to);finish() });
 }
 
 /* ============ РЕЖИМ ВЛАДЕЛЬЦА ============ */
@@ -687,16 +730,6 @@ function renderTop(){
  $('#adminZone').innerHTML= adminMode
   ? '<span class="adbadge">✏️ Режим редактора</span><button class="btn ghost slim" onclick="logout()">Выйти</button>'
   : '<button class="btn ghost slim" onclick="askAdmin()">🔒 Вход</button>';
-}
-function restoreSession(){
- if(!ADMIN_KEY||!REPO){return}
- checkToken(ADMIN_KEY).then(function(ok){
-  if(ok){
-   adminMode=true;render();
-   if(needSeed||dataDirty||LS.get(PENDING_K)){ dataDirty=true;doPush() }
-  }
-  else{ ADMIN_KEY='';LS.remove(KEY_K) }
- }).catch(function(){});
 }
 function askAdmin(){
  if(!REPO){
@@ -749,6 +782,7 @@ var state={kind:'cars',cat:'main',dep:'all',q:''};
 function setKind(k){
  state.kind=k;state.cat='main';state.dep='all';state.q='';$('#q').value='';
  qsa('.tab').forEach(function(t){t.classList.toggle('on',t.dataset.kind===k)});
+ if(!booted){return}          /* данные ещё грузятся — нарисуем позже, сразу правильные */
  refade();render();
 }
 function setCat(c){state.cat=c;state.dep='all';render()}
@@ -839,7 +873,7 @@ function renderGrid(){
 }
 function render(){renderTop();renderHead();renderCats();renderChips();renderGrid()}
 
-/* ============ ФОТО: ВЫБОР И СЖАТИЕ ============ */
+/* ============ ФОТО ============ */
 var pickMode=null, pickId=null, addPhoto=null;
 function pickPhoto(mode,id){
  pickMode=mode;pickId=id;$('#fileInp').value='';$('#fileInp').click();
@@ -938,7 +972,7 @@ vgrid.addEventListener('drop',function(e){
 document.addEventListener('dragover',function(e){e.preventDefault()});
 document.addEventListener('drop',function(e){e.preventDefault()});
 
- $('#q').addEventListener('input',function(){state.q=this.value.trim();renderGrid()});
+ $('#q').addEventListener('input',function(){ if(!booted){return} state.q=this.value.trim();renderGrid() });
 
 /* ============ ЛАЙТБОКС ============ */
 function openLB(id){
@@ -1057,9 +1091,13 @@ document.addEventListener('keydown',function(e){
 });
 
 /* ============ СТАРТ ============ */
-ITEMS=loadLocal();
-render();
-if(REPO){ initRemote() } else { setSync('','Локально') }
+if(REPO){
+ initRemote();          /* скелетон → данные с сервера → одна отрисовка */
+}else{
+ ITEMS=loadLocal();
+ render();
+ setSync('','Локально');
+}
 </script>
 </body>
 </html>
