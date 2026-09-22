@@ -230,16 +230,16 @@ h1{font-size:20px}
 <body>
 <div id="errbox"></div>
 <script>
-/* Показываем красный бокс только для настоящих ошибок скрипта.
-   Ошибки загрузки ресурсов (img, link, script) — обычные Event,
-   а не ErrorEvent, и у них нет message. */
+/* Показываем бокс ТОЛЬКО для настоящих JS-ошибок.
+   Ошибки загрузки картинок/скриптов приходят как обычный Event,
+   без .message — их фильтруем через instanceof ErrorEvent. */
 window.addEventListener('error',function(ev){
  if(!(ev instanceof ErrorEvent)){return}
  if(!ev.message){return}
  var b=document.getElementById('errbox');
  if(b){
   b.style.display='block';
-  b.textContent='Ошибка: '+ev.message+(ev.filename?' — '+ev.filename+':'+(ev.lineno||0):'');
+  b.textContent='Ошибка: '+ev.message+(ev.filename?'\n'+ev.filename+':'+(ev.lineno||0):'');
  }
 },true);
 </script>
@@ -329,9 +329,20 @@ var LS=(function(){
 function $(s){return document.querySelector(s)}
 function qsa(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}
-/* ИСПРАВЛЕНО: было h.slice(3,5,16) — не хватало ")" и лишний аргумент */
-function hex2rgba(h,a){var r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return 'rgba('+r+','+g+','+b+','+a+')'}
-function toast(msg,warn){var t=document.createElement('div');t.className='toast'+(warn?' warn':'');t.textContent=msg;$('#troot').appendChild(t);setTimeout(function(){t.classList.add('out')},3400);setTimeout(function(){t.remove()},3900)}
+function hex2rgba(h,a){
+ var r=parseInt(h.substring(1,3),16);
+ var g=parseInt(h.substring(3,5),16);
+ var b=parseInt(h.substring(5,7),16);
+ return 'rgba('+r+','+g+','+b+','+a+')';
+}
+function toast(msg,warn){
+ var t=document.createElement('div');
+ t.className='toast'+(warn?' warn':'');
+ t.textContent=msg;
+ $('#troot').appendChild(t);
+ setTimeout(function(){t.classList.add('out')},3400);
+ setTimeout(function(){t.remove()},3900);
+}
 function b64e(s){return btoa(unescape(encodeURIComponent(s)))}
 function b64d(s){return decodeURIComponent(escape(atob(s)))}
 
@@ -358,7 +369,8 @@ var CLASSES=[
  {k:'budget',  n:'Бюджет',        c:'#8b95a7'},
  {k:'special', n:'Спецтранспорт', c:'#ff9a3d'}
 ];
-var CLS_MAP={};for(var ci=0;ci<CLASSES.length;ci++){CLS_MAP[CLASSES[ci].k]=CLASSES[ci]}
+var CLS_MAP={};
+for(var ci=0;ci<CLASSES.length;ci++){CLS_MAP[CLASSES[ci].k]=CLASSES[ci]}
 function clName(k){return CLS_MAP[k]?CLS_MAP[k].n:'Стандарт'}
 function isGrouped(){return state.kind==='cars'&&state.cat==='main'}
 function clsOf(it){
@@ -421,7 +433,13 @@ function seed(){return [
  {id:'f13',kind:'form',cat:'event',dep:'fso',  name:'Форма ФСО',                 desc:'Чёрный костюм, значок ФСО, проводная гарнитура',   photo:''}
 ];}
 
-function toArr(x){if(!x){return null}if(Array.isArray(x)){return x}var ks=Object.keys(x).sort(function(a,b){return a-b}),arr=[];for(var i=0;i<ks.length;i++){arr[+ks[i]]=x[ks[i]]}return arr}
+function toArr(x){
+ if(!x){return null}
+ if(Array.isArray(x)){return x}
+ var ks=Object.keys(x).sort(function(a,b){return a-b}),arr=[];
+ for(var i=0;i<ks.length;i++){arr[+ks[i]]=x[ks[i]]}
+ return arr;
+}
 function loadLocal(){
  var d=null;
  try{ d=JSON.parse(LS.get(LOCAL_K)||'null') }catch(e){}
@@ -459,12 +477,22 @@ function cacheItems(){try{LS.set(CACHE_K,JSON.stringify({rev:localRev,items:ITEM
 function loadCache(){
  try{
   var c=JSON.parse(LS.get(CACHE_K)||'null');
-  if(c){var a=toArr(c.items);if(a){return {rev:(typeof c.rev==='number'?c.rev:0),items:a}}}
+  if(c){
+   var a=toArr(c.items);
+   if(a){return {rev:(typeof c.rev==='number'?c.rev:0),items:a}}
+  }
  }catch(e){}
  return null;
 }
 function byId(id){for(var i=0;i<ITEMS.length;i++){if(ITEMS[i].id===id){return ITEMS[i]}}return null}
-function countItems(kind,cat,dp){var n=0;for(var i=0;i<ITEMS.length;i++){var it=ITEMS[i];if(it.kind===kind&&it.cat===cat&&(dp===null||it.dep===dp)){n++}}return n}
+function countItems(kind,cat,dp){
+ var n=0;
+ for(var i=0;i<ITEMS.length;i++){
+  var it=ITEMS[i];
+  if(it.kind===kind&&it.cat===cat&&(dp===null||it.dep===dp)){n++}
+ }
+ return n;
+}
 
 /* ============ СИНХРОНИЗАЦИЯ ============ */
 function setSync(cls,txt){
@@ -499,7 +527,8 @@ function apiBlobText(sha){
 function ghHeaders(){return {Authorization:'token '+ADMIN_KEY,Accept:'application/vnd.github+json','Content-Type':'application/json'}}
 function ghReq(method,path,body){
  return fetch('https://api.github.com/repos/'+REPO+'/'+path,{
-  method:method,headers:ghHeaders(),
+  method:method,
+  headers:ghHeaders(),
   body:body?JSON.stringify(body):undefined
  }).then(function(r){
   if(!r.ok){throw r.status}
@@ -570,20 +599,26 @@ function doPush(){
    return ghReq('POST','git/trees',{base_tree:b.t,tree:tree}).then(function(nt){
     return ghReq('POST','git/commits',{message:'sync: '+rev,tree:nt.sha,parents:[b.c]}).then(function(nc){
      return ghReq('PATCH','git/refs/heads/'+BRANCH,{sha:nc.sha}).then(function(){
-      lastCommitSha=nc.sha;lastTreeSha=nt.sha;
+      lastCommitSha=nc.sha;
+      lastTreeSha=nt.sha;
      });
     });
    });
   });
  }).then(function(){
-  pushInFlight=false;pushRetries=0;pushToastShown=false;
-  localRev=rev;pendingRev=null;
+  pushInFlight=false;
+  pushRetries=0;
+  pushToastShown=false;
+  localRev=rev;
+  pendingRev=null;
   cacheItems();
   LS.remove(PENDING_K);
   setSync('ok','GitHub');
   if(dataDirty){ pushTimer=setTimeout(doPush,150) }
  }).catch(function(code){
-  pushInFlight=false;pendingRev=null;dataDirty=true;
+  pushInFlight=false;
+  pendingRev=null;
+  dataDirty=true;
   if(code===401){
    setSync('err','Токен недействителен');
    toast('Токен недействителен — войдите заново через 🔒',true);
@@ -591,7 +626,8 @@ function doPush(){
   }
   if(code===422&&pushRetries<4){
    pushRetries++;
-   lastCommitSha=null;lastTreeSha=null;
+   lastCommitSha=null;
+   lastTreeSha=null;
    pushTimer=setTimeout(doPush,300);
    return;
   }
@@ -620,7 +656,8 @@ function resolveRev(){
 }
 function pullData(rv){
  return rawGet('data.json').then(function(d){
-  var j=null;try{j=JSON.parse(d)}catch(e){}
+  var j=null;
+  try{j=JSON.parse(d)}catch(e){}
   var items=toArr(j&&j.items);
   if(!items){throw new Error('bad')}
   if(typeof j.rev!=='number'||j.rev>=rv.rev){
@@ -641,7 +678,10 @@ function pullData(rv){
  });
 }
 function applyData(rev,items){
- ITEMS=items;localRev=rev;cacheItems();render();
+ ITEMS=items;
+ localRev=rev;
+ cacheItems();
+ render();
 }
 
 function rawTick(){
@@ -654,7 +694,8 @@ function rawTick(){
   if(adminMode&&(dataDirty||pushInFlight)){return}
   setSync('busy','Обновление…');
   return rawGet('data.json').then(function(d){
-   var j=null;try{j=JSON.parse(d)}catch(e){}
+   var j=null;
+   try{j=JSON.parse(d)}catch(e){}
    var items=toArr(j&&j.items);
    if(items&&(typeof j.rev!=='number'||j.rev>=rv.rev)){
     applyData((typeof j.rev==='number')?Math.max(j.rev,rv.rev):rv.rev,items);
@@ -718,21 +759,31 @@ function initRemote(){
   if(noData){
    if(cache){ ITEMS=cache.items;localRev=cache.rev;needSeed=false;if(ADMIN_KEY){dataDirty=true} }
    else{ ITEMS=seed();needSeed=true }
-   finishBoot('ok','GitHub');return;
+   finishBoot('ok','GitHub');
+   return;
   }
   if(cache&&cache.rev>rv.rev){
-   ITEMS=cache.items;localRev=cache.rev;needSeed=false;
+   ITEMS=cache.items;
+   localRev=cache.rev;
+   needSeed=false;
    if(ADMIN_KEY){ dataDirty=true }
-   finishBoot('ok','GitHub');return;
+   finishBoot('ok','GitHub');
+   return;
   }
   if(cache&&cache.rev===rv.rev){
-   ITEMS=cache.items;localRev=rv.rev;needSeed=false;
-   finishBoot('ok','GitHub');return;
+   ITEMS=cache.items;
+   localRev=rv.rev;
+   needSeed=false;
+   finishBoot('ok','GitHub');
+   return;
   }
   setSync('busy','Загрузка…');
   pullData(rv).then(function(res){
    if(res&&res.items){ ITEMS=res.items;localRev=res.rev;cacheItems();needSeed=false }
-   else{ if(cache){ITEMS=cache.items;localRev=cache.rev;needSeed=false}else{ITEMS=seed();needSeed=true} }
+   else{
+    if(cache){ITEMS=cache.items;localRev=cache.rev;needSeed=false}
+    else{ITEMS=seed();needSeed=true}
+   }
    finishBoot('ok','GitHub');
   }).catch(function(){
    if(cache){ITEMS=cache.items;localRev=cache.rev}
@@ -760,11 +811,15 @@ function restoreSession(cb){
  var to=setTimeout(finish,5000);
  checkToken(ADMIN_KEY).then(function(ok){
   if(done){clearTimeout(to);return}
-  clearTimeout(to);done=true;
+  clearTimeout(to);
+  done=true;
   if(ok){
    adminMode=true;
    if(needSeed||dataDirty||LS.get(PENDING_K)){ dataDirty=true;doPush() }
-  }else{ ADMIN_KEY='';LS.remove(KEY_K) }
+  }else{
+   ADMIN_KEY='';
+   LS.remove(KEY_K);
+  }
   if(cb){cb()}
  },function(){ clearTimeout(to);finish() });
 }
@@ -777,7 +832,8 @@ function renderTop(){
 }
 function askAdmin(){
  if(!REPO){
-  adminMode=true;render();
+  adminMode=true;
+  render();
   toast('Демо-режим: изменения сохраняются только в этом браузере');
   return;
  }
@@ -792,17 +848,20 @@ function askAdmin(){
   '<div class="m-foot"><button class="btn ghost" onclick="closeM()">Отмена</button>'+
   '<button class="btn" onclick="tryLogin()">Войти</button></div>'+
  '</div></div>';
- setTimeout(function(){$('#fKey').focus()},60);
+ setTimeout(function(){ var k=$('#fKey'); if(k){k.focus()} },60);
 }
 function tryLogin(){
- var tok=$('#fKey').value.trim();
+ var kk=$('#fKey');
+ var tok=kk?kk.value.trim():'';
  if(!tok){toast('Введите токен',true);return}
  setSync('busy','Проверка…');
  checkToken(tok).then(function(ok){
   if(!ok){setSync('err','Ошибка');toast('Токен без права записи в этот репозиторий',true);return}
   ADMIN_KEY=tok;
   LS.set(KEY_K,tok);
-  adminMode=true;closeM();render();
+  adminMode=true;
+  closeM();
+  render();
   if(needSeed||dataDirty||LS.get(PENDING_K)){ dataDirty=true;doPush() }
   toast('Вход выполнен — доступно редактирование');
  }).catch(function(code){
@@ -812,10 +871,14 @@ function tryLogin(){
  });
 }
 function logout(){
- ADMIN_KEY='';adminMode=false;
+ ADMIN_KEY='';
+ adminMode=false;
  LS.remove(KEY_K);
- clearTimeout(pushTimer);pushTimer=null;
- dataDirty=false;pushInFlight=false;pendingRev=null;
+ clearTimeout(pushTimer);
+ pushTimer=null;
+ dataDirty=false;
+ pushInFlight=false;
+ pendingRev=null;
  render();
  toast('Вы вышли из режима редактирования');
 }
@@ -824,10 +887,15 @@ function logout(){
 var state={kind:'cars',cat:'main',dep:'all',q:''};
 
 function setKind(k){
- state.kind=k;state.cat='main';state.dep='all';state.q='';$('#q').value='';
+ state.kind=k;
+ state.cat='main';
+ state.dep='all';
+ state.q='';
+ $('#q').value='';
  qsa('.tab').forEach(function(t){t.classList.toggle('on',t.dataset.kind===k)});
  if(!booted){return}
- refade();render();
+ refade();
+ render();
 }
 function setCat(c){state.cat=c;state.dep='all';render()}
 function setDep(d){state.dep=d;renderChips();renderGrid()}
@@ -883,7 +951,8 @@ function cardHtml(it,i){
    '<button class="vtool vtool-org" title="Сменить ведомство">🏷</button>'+
    (G?'<button class="vtool vtool-cls" title="Изменить класс">⇄</button>':'')+
    '<button class="vtool vtool-sw" title="Загрузить / сменить фото">↻</button>'+
-   '<button class="vtool vtool-del" title="Удалить карточку">✕</button></div>';
+   '<button class="vtool vtool-del" title="Удалить карточку">✕</button>'+
+   '</div>';
   if(G){drag=' draggable="true"'}
  }
  var sp=it.kind==='cars'?
@@ -921,11 +990,11 @@ function renderGrid(){
    for(var i=0;i<list.length;i++){ if(clsOf(list[i])===cl.k){sub.push(list[i])} }
    h+='<div class="gsec" data-cls="'+cl.k+'" style="--gc:'+cl.c+'">'+
     '<div class="ghead">'+
-     '<span class="gd" style="background:'+cl.c+';box-shadow:0 0 8px '+cl.c+'66"></span>'+
-     '<span class="gname" style="color:'+cl.c+'">'+cl.n+'</span>'+
-     '<b class="cn">'+sub.length+'</b>'+
-     '<span class="gline"></span>'+
-     (adminMode?'<span class="ghint">перетащите машины сюда</span>':'')+
+    '<span class="gd" style="background:'+cl.c+';box-shadow:0 0 8px '+cl.c+'66"></span>'+
+    '<span class="gname" style="color:'+cl.c+'">'+cl.n+'</span>'+
+    '<b class="cn">'+sub.length+'</b>'+
+    '<span class="gline"></span>'+
+    (adminMode?'<span class="ghint">перетащите машины сюда</span>':'')+
     '</div>';
    if(sub.length){
     h+='<div class="ggrid">';
@@ -958,10 +1027,14 @@ function render(){renderTop();renderHead();renderCats();renderChips();renderGrid
 /* ============ ФОТО ============ */
 var pickMode=null, pickId=null, addPhoto=null;
 function pickPhoto(mode,id){
- pickMode=mode;pickId=id;$('#fileInp').value='';$('#fileInp').click();
+ pickMode=mode;
+ pickId=id;
+ $('#fileInp').value='';
+ $('#fileInp').click();
 }
  $('#fileInp').addEventListener('change',function(){
- var f=this.files[0];if(!f){return}
+ var f=this.files[0];
+ if(!f){return}
  loadFile(f,pickMode,pickId);
  this.value='';
 });
@@ -989,7 +1062,8 @@ function compress(im){
   c.width=Math.max(1,Math.round(im.width*k));
   c.height=Math.max(1,Math.round(im.height*k));
   var ctx=c.getContext('2d');
-  ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);
+  ctx.fillStyle='#fff';
+  ctx.fillRect(0,0,c.width,c.height);
   ctx.drawImage(im,0,0,c.width,c.height);
   var data=c.toDataURL('image/jpeg',steps[i][1]);
   if(data.length<200*1024||i===steps.length-1){return data}
@@ -999,7 +1073,10 @@ function compress(im){
 /* ============ ПЕРЕТАСКИВАНИЕ МЕЖДУ КЛАССАМИ ============ */
 var vgrid=$('#vgrid');
 function dragHasFiles(e){
- return !!(e.dataTransfer&&e.dataTransfer.types&&Array.prototype.indexOf.call(e.dataTransfer.types,'Files')>-1);
+ if(!e.dataTransfer||!e.dataTransfer.types){return false}
+ var t=e.dataTransfer.types;
+ for(var i=0;i<t.length;i++){if(t[i]==='Files'){return true}}
+ return false;
 }
 vgrid.addEventListener('dragstart',function(e){
  if(!adminMode||!isGrouped()){return}
@@ -1046,19 +1123,25 @@ vgrid.addEventListener('drop',function(e){
   if(clsOf(it)!==g){
    var oldName=clName(clsOf(it));
    it.cls=g;
-   commit();render();
+   commit();
+   render();
    toast('«'+(it.name||'без названия')+'»: '+oldName+' → '+clName(g));
   }
   return;
  }
  var ph=e.target.closest('.vph'),card=e.target.closest('.vcard');
  qsa('.vph.drag',vgrid).forEach(function(x){x.classList.remove('drag')});
- if(ph&&card){e.preventDefault();var f=e.dataTransfer.files[0];if(f){loadFile(f,'item',card.dataset.id)}}
+ if(ph&&card){
+  e.preventDefault();
+  var f=e.dataTransfer.files[0];
+  if(f){loadFile(f,'item',card.dataset.id)}
+ }
 });
 
 /* ============ КЛИКИ ПО СЕТКЕ ============ */
 vgrid.addEventListener('click',function(e){
- var t=e.target,card=t.closest('.vcard');if(!card){return}
+ var t=e.target,card=t.closest('.vcard');
+ if(!card){return}
  var id=card.dataset.id;
  if(!adminMode){
   if(t.closest('.vph')&&t.tagName==='IMG'){openLB(id)}
@@ -1078,8 +1161,10 @@ vgrid.addEventListener('click',function(e){
 vgrid.addEventListener('blur',function(e){
  var t=e.target;
  if(!adminMode||!t.isContentEditable){return}
- var card=t.closest('.vcard');if(!card){return}
- var it=byId(card.dataset.id);if(!it){return}
+ var card=t.closest('.vcard');
+ if(!card){return}
+ var it=byId(card.dataset.id);
+ if(!it){return}
  var val=t.innerText.replace(/\u00a0/g,' ').trim();
  if(t.classList.contains('vname')){it.name=val}
  else if(t.classList.contains('vdesc')){it.desc=val}
@@ -1090,7 +1175,8 @@ vgrid.addEventListener('blur',function(e){
 
 vgrid.addEventListener('keydown',function(e){
  if(e.key==='Enter'&&e.target.classList&&(e.target.classList.contains('vname')||e.target.classList.contains('vnum'))){
-  e.preventDefault();e.target.blur();
+  e.preventDefault();
+  e.target.blur();
  }
 });
 vgrid.addEventListener('paste',function(e){
@@ -1108,15 +1194,16 @@ document.addEventListener('drop',function(e){e.preventDefault()});
 /* ============ СМЕНА ВЕДОМСТВА ============ */
 function askOrg(id){
  if(!adminMode){return}
- var it=byId(id);if(!it){return}
+ var it=byId(id);
+ if(!it){return}
  var cur=it.dep;
  var h='';
  for(var i=0;i<DEPS.length;i++){
   if(DEPS[i].cat!==it.cat){continue}
-  h+='<button class="clsbtn'+(DEPS[i].k===cur?' on':'')+'" style="--cc:'+DEPS[i].c+';--ccb:'+hex2rgba(DEPS[i].c,.14)+'" onclick="setOrg(\''+id+'\',\''+DEPS[i].k+'\')">'+
-     '<span class="dot" style="background:'+DEPS[i].c+'"></span>'+esc(DEPS[i].n)+
-     (DEPS[i].k===cur?'<b class="cn" style="margin-left:auto">текущее</b>':'')+
-     '</button>';
+  h+='<button class="clsbtn'+(DEPS[i].k===cur?' on':'')+'" style="--cc:'+DEPS[i].c+';--ccb:'+hex2rgba(DEPS[i].c,.14)+'" data-setorg="'+id+'" data-val="'+DEPS[i].k+'">'+
+   '<span class="dot" style="background:'+DEPS[i].c+'"></span>'+esc(DEPS[i].n)+
+   (DEPS[i].k===cur?'<b class="cn" style="margin-left:auto">текущее</b>':'')+
+   '</button>';
  }
  $('#croot').innerHTML=
  '<div class="back" onclick="if(event.target===this)closeC()"><div class="modal smw">'+
@@ -1127,25 +1214,29 @@ function askOrg(id){
  '</div></div>';
 }
 function setOrg(id,dk){
- var it=byId(id);if(!it){closeC();return}
+ var it=byId(id);
+ if(!it){closeC();return}
  if(it.dep===dk){closeC();return}
  var old=dep(it.dep);
  it.dep=dk;
- closeC();commit();render();
+ closeC();
+ commit();
+ render();
  toast('«'+(it.name||'без названия')+'»: '+old.s+' → '+dep(dk).s);
 }
 
 /* ============ СМЕНА КЛАССА ============ */
 function askClass(id){
  if(!adminMode){return}
- var it=byId(id);if(!it){return}
+ var it=byId(id);
+ if(!it){return}
  var cur=clsOf(it);
  var h='';
  for(var i=0;i<CLASSES.length;i++){
-  h+='<button class="clsbtn'+(CLASSES[i].k===cur?' on':'')+'" style="--cc:'+CLASSES[i].c+';--ccb:'+hex2rgba(CLASSES[i].c,.14)+'" onclick="setCls(\''+id+'\',\''+CLASSES[i].k+'\')">'+
-     '<span class="dot" style="background:'+CLASSES[i].c+'"></span>'+CLASSES[i].n+
-     (CLASSES[i].k===cur?'<b class="cn" style="margin-left:auto">текущий</b>':'')+
-     '</button>';
+  h+='<button class="clsbtn'+(CLASSES[i].k===cur?' on':'')+'" style="--cc:'+CLASSES[i].c+';--ccb:'+hex2rgba(CLASSES[i].c,.14)+'" data-setcls="'+id+'" data-val="'+CLASSES[i].k+'">'+
+   '<span class="dot" style="background:'+CLASSES[i].c+'"></span>'+CLASSES[i].n+
+   (CLASSES[i].k===cur?'<b class="cn" style="margin-left:auto">текущий</b>':'')+
+   '</button>';
  }
  $('#croot').innerHTML=
  '<div class="back" onclick="if(event.target===this)closeC()"><div class="modal smw">'+
@@ -1156,18 +1247,39 @@ function askClass(id){
  '</div></div>';
 }
 function setCls(id,cls){
- var it=byId(id);if(!it){closeC();return}
+ var it=byId(id);
+ if(!it){closeC();return}
  it.cls=cls;
- closeC();commit();render();
+ closeC();
+ commit();
+ render();
  toast('«'+(it.name||'без названия')+'» → '+clName(cls));
 }
 
+/* один обработчик для кнопок в модалках выбора */
+document.addEventListener('click',function(e){
+ var t=e.target;
+ if(!t||!t.closest){return}
+ var el=t.closest('[data-setorg]');
+ if(el){setOrg(el.getAttribute('data-setorg'),el.getAttribute('data-val'));return}
+ el=t.closest('[data-setcls]');
+ if(el){setCls(el.getAttribute('data-setcls'),el.getAttribute('data-val'));return}
+ el=t.closest('[data-del]');
+ if(el){delItem(el.getAttribute('data-del'))}
+});
+
 /* ============ ЛАЙТБОКС ============ */
+/* ИСПРАВЛЕНО: не сбрасываем src в '' и отменяем старый таймер закрытия,
+   чтобы при быстром открытии нового фото предыдущий таймер его не стёр. */
+var lbCloseTimer=null;
 function openLB(id){
- var it=byId(id);if(!it||!it.photo){return}
+ var it=byId(id);
+ if(!it||!it.photo){return}
+ if(lbCloseTimer){clearTimeout(lbCloseTimer);lbCloseTimer=null}
  var d=dep(it.dep);
  var sub='<i class="lbdot" style="background:'+d.c+'"></i>'+esc(d.n)+(it.kind==='cars'&&it.speed?' · '+esc(it.speed)+' км/ч':'');
- $('#lbImg').src=it.photo;
+ var img=$('#lbImg');
+ img.setAttribute('src',it.photo);
  $('#lbCap').innerHTML=esc(it.name||'Без названия')+'<span>'+sub+'</span>';
  var lb=$('#lb');
  lb.classList.add('show');
@@ -1176,9 +1288,14 @@ function openLB(id){
 function closeLB(){
  var lb=$('#lb');
  lb.classList.remove('zoom');
- setTimeout(function(){
+ if(lbCloseTimer){clearTimeout(lbCloseTimer)}
+ lbCloseTimer=setTimeout(function(){
+  lbCloseTimer=null;
   lb.classList.remove('show');
-  $('#lbImg').removeAttribute('src');
+  /* ИСПРАВЛЕНО: removeAttribute вместо src='' — иначе браузер
+     пытается загрузить пустой URL и кидает resource error. */
+  var img=$('#lbImg');
+  if(img){img.removeAttribute('src')}
  },240);
 }
  $('#lb').addEventListener('click',function(e){
@@ -1190,9 +1307,17 @@ function closeM(){$('#mroot').innerHTML=''}
 function setAddPrev(src){var z=$('#aphIn');if(z){z.innerHTML='<img src="'+src+'">'}}
 function fillMDeps(cat,sel){
  var o='';
- for(var i=0;i<DEPS.length;i++){if(DEPS[i].cat===cat){o+='<option value="'+DEPS[i].k+'">'+esc(DEPS[i].n)+'</option>'}}
- var el=$('#fDep');el.innerHTML=o;
- if(sel){for(var j=0;j<DEPS.length;j++){if(DEPS[j].k===sel&&DEPS[j].cat===cat){el.value=sel;break}}}
+ for(var i=0;i<DEPS.length;i++){
+  if(DEPS[i].cat===cat){o+='<option value="'+DEPS[i].k+'">'+esc(DEPS[i].n)+'</option>'}
+ }
+ var el=$('#fDep');
+ if(!el){return}
+ el.innerHTML=o;
+ if(sel){
+  for(var j=0;j<DEPS.length;j++){
+   if(DEPS[j].k===sel&&DEPS[j].cat===cat){el.value=sel;break}
+  }
+ }
 }
 function updClsRow(){
  var row=$('#clsRow');
@@ -1219,15 +1344,15 @@ function openAdd(){
   '<div class="mh-sub">Заполните карточку — фото можно загрузить сразу или позже, кликнув по окну в общем списке</div>'+
   '<button class="m-close" onclick="closeM()">✕</button></div>'+
   '<div class="m-body">'+
-   '<div class="aph" id="aph"><div class="aph-in" id="aphIn"><span class="aph-ic">🖼️</span><b>Загрузить фото</b><span>клик или перетащите файл сюда</span></div></div>'+
-   '<div class="formgrid" style="margin-top:16px">'+
-    '<div><label class="flab">Категория</label><select class="sel" id="fCat" style="width:100%" onchange="fillMDeps(this.value);updClsRow()">'+catOpts+'</select></div>'+
-    '<div><label class="flab">Ведомство</label><select class="sel" id="fDep" style="width:100%"></select></div>'+
-    (isCars?'<div id="clsRow"><label class="flab">Класс</label><select class="sel" id="fCls" style="width:100%">'+clsOpts+'</select></div>':'')+
-    (isCars?'<div><label class="flab">Макс. скорость, км/ч</label><input class="inp" id="fSp" style="width:100%" placeholder="напр. 180"></div>':'')+
-    '<div class="full"><label class="flab">Название</label><input class="inp" id="fName" style="width:100%" placeholder="'+(isCars?'напр. Lada Vesta · ДПС':'напр. Летняя форма')+'"></div>'+
-    '<div class="full"><label class="flab">Описание</label><textarea class="inp" id="fDesc" rows="3" style="width:100%" placeholder="'+(isCars?'Подразделение, назначение, комплектация…':'Комплектация, сезон, особенности…')+'"></textarea></div>'+
-   '</div>'+
+  '<div class="aph" id="aph"><div class="aph-in" id="aphIn"><span class="aph-ic">🖼️</span><b>Загрузить фото</b><span>клик или перетащите файл сюда</span></div></div>'+
+  '<div class="formgrid" style="margin-top:16px">'+
+  '<div><label class="flab">Категория</label><select class="sel" id="fCat" style="width:100%" onchange="fillMDeps(this.value);updClsRow()">'+catOpts+'</select></div>'+
+  '<div><label class="flab">Ведомство</label><select class="sel" id="fDep" style="width:100%"></select></div>'+
+  (isCars?'<div id="clsRow"><label class="flab">Класс</label><select class="sel" id="fCls" style="width:100%">'+clsOpts+'</select></div>':'')+
+  (isCars?'<div><label class="flab">Макс. скорость, км/ч</label><input class="inp" id="fSp" style="width:100%" placeholder="напр. 180"></div>':'')+
+  '<div class="full"><label class="flab">Название</label><input class="inp" id="fName" style="width:100%" placeholder="'+(isCars?'напр. Lada Vesta · ДПС':'напр. Летняя форма')+'"></div>'+
+  '<div class="full"><label class="flab">Описание</label><textarea class="inp" id="fDesc" rows="3" style="width:100%" placeholder="'+(isCars?'Подразделение, назначение, комплектация…':'Комплектация, сезон, особенности…')+'"></textarea></div>'+
+  '</div>'+
   '</div>'+
   '<div class="m-foot"><button class="btn ghost" onclick="closeM()">Отмена</button>'+
   '<button class="btn" onclick="submitAdd()">'+(isCars?'Добавить машину':'Добавить форму')+'</button></div>'+
@@ -1239,30 +1364,40 @@ function openAdd(){
  aph.addEventListener('dragover',function(e){e.preventDefault();aph.classList.add('drag')});
  aph.addEventListener('dragleave',function(){aph.classList.remove('drag')});
  aph.addEventListener('drop',function(e){
-  e.preventDefault();aph.classList.remove('drag');
-  var f=e.dataTransfer.files[0];if(f){loadFile(f,'add',null)}
+  e.preventDefault();
+  aph.classList.remove('drag');
+  var f=e.dataTransfer.files[0];
+  if(f){loadFile(f,'add',null)}
  });
- setTimeout(function(){$('#fName').focus()},60);
+ setTimeout(function(){ var n=$('#fName'); if(n){n.focus()} },60);
 }
 function submitAdd(){
  if(!adminMode){return}
- var name=$('#fName').value.trim();
- if(!name){toast(state.kind==='cars'?'Введите название машины':'Введите название формы',true);$('#fName').focus();return}
- var isMain=state.kind==='cars'&&$('#fCat').value==='main';
+ var nameEl=$('#fName');
+ var name=nameEl?nameEl.value.trim():'';
+ if(!name){
+  toast(state.kind==='cars'?'Введите название машины':'Введите название формы',true);
+  if(nameEl){nameEl.focus()}
+  return;
+ }
+ var fCat=$('#fCat'),fDep=$('#fDep'),fCls=$('#fCls'),fDesc=$('#fDesc'),fSp=$('#fSp');
+ var isMain=state.kind==='cars'&&fCat&&fCat.value==='main';
  ITEMS.unshift({
   id:'n'+Date.now()+Math.floor(Math.random()*999),
   kind:state.kind,
-  cat:$('#fCat').value,
-  dep:$('#fDep').value,
-  cls:(isMain&&$('#fCls'))?$('#fCls').value:'',
+  cat:fCat?fCat.value:'main',
+  dep:fDep?fDep.value:'',
+  cls:(isMain&&fCls)?fCls.value:'',
   name:name,
-  desc:$('#fDesc').value.trim(),
-  speed:state.kind==='cars'&&$('#fSp')?$('#fSp').value.trim():'',
+  desc:fDesc?fDesc.value.trim():'',
+  speed:state.kind==='cars'&&fSp?fSp.value.trim():'',
   photo:addPhoto||''
  });
- state.cat=$('#fCat').value;
- state.dep=$('#fDep').value;
- closeM();commit();render();
+ if(fCat){state.cat=fCat.value}
+ if(fDep){state.dep=fDep.value}
+ closeM();
+ commit();
+ render();
  toast(state.kind==='cars'?'Машина добавлена: «'+name+'»':'Форма добавлена: «'+name+'»');
 }
 
@@ -1270,7 +1405,8 @@ function submitAdd(){
 function closeC(){$('#croot').innerHTML=''}
 function askDel(id){
  if(!adminMode){return}
- var it=byId(id);if(!it){return}
+ var it=byId(id);
+ if(!it){return}
  var d=dep(it.dep);
  var info='<i class="lbdot" style="background:'+d.c+'"></i>'+esc(d.n)+(it.kind==='cars'&&it.speed?' · '+esc(it.speed)+' км/ч':'')+(clsOf(it)?'<br>Класс: '+clName(clsOf(it)):'');
  $('#croot').innerHTML=
@@ -1278,13 +1414,18 @@ function askDel(id){
   '<div class="m-head"><div class="mh-nm" style="font-size:16px">Удалить карточку?</div>'+
   '<div class="mh-sub">«'+esc(it.name||'Без названия')+'»<br>'+info+'<br>Категория: '+esc(catName(it.kind,it.cat))+'</div></div>'+
   '<div class="m-foot" style="justify-content:flex-end"><button class="btn ghost" onclick="closeC()">Отмена</button>'+
-  '<button class="btn warn" onclick="delItem(\''+id+'\')">Удалить</button></div>'+
+  '<button class="btn warn" data-del="'+id+'">Удалить</button></div>'+
  '</div></div>';
 }
 function delItem(id){
  if(!adminMode){return}
- for(var i=0;i<ITEMS.length;i++){if(ITEMS[i].id===id){ITEMS.splice(i,1);break}}
- closeC();commit();render();toast('Карточка удалена');
+ for(var i=0;i<ITEMS.length;i++){
+  if(ITEMS[i].id===id){ITEMS.splice(i,1);break}
+ }
+ closeC();
+ commit();
+ render();
+ toast('Карточка удалена');
 }
 
 /* ============ Esc ============ */
