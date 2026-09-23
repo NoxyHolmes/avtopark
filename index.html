@@ -15,7 +15,6 @@ body{background:radial-gradient(1100px 520px at 8% -10%,rgba(45,100,170,.17),tra
 ::-webkit-scrollbar-thumb:hover{background:#3a4656}
 #errbox{display:none;position:fixed;left:12px;top:12px;z-index:990;background:#3a1414;border:1px solid #a34444;color:#ffb3b3;padding:12px 16px;border-radius:10px;font:12px/1.5 monospace;max-width:85%;white-space:pre-wrap}
 button{touch-action:manipulation}
-
 #topbar{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid var(--line);background:rgba(14,17,22,.92);position:sticky;top:0;z-index:50;backdrop-filter:blur(10px);box-shadow:0 6px 24px rgba(0,0,0,.35);gap:10px}
 .tb-left{display:flex;align-items:center;gap:12px;min-width:0}
 .logo-ic{width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,#33578b,#17304f);display:flex;align-items:center;justify-content:center;font-size:17px;border:1px solid #3d557f;box-shadow:0 4px 14px rgba(30,80,160,.28);flex:0 0 34px}
@@ -27,10 +26,8 @@ button{touch-action:manipulation}
 .sync.busy i{background:var(--yellow);box-shadow:0 0 8px rgba(247,201,72,.4)}
 .sync.err i{background:var(--red);box-shadow:0 0 8px rgba(255,92,92,.4)}
 .adbadge{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:10px;border:1px solid rgba(47,217,122,.4);background:rgba(47,217,122,.1);color:#7ce6a8;font-size:11.5px;font-weight:800;white-space:nowrap}
-
 #content{padding:22px;max-width:1440px;width:100%;margin:0 auto;animation:fade .3s}
 @keyframes fade{from{opacity:0;transform:translateY(8px)}}
-
 .ph{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:2px}
 h1{font-size:23px;font-weight:800;letter-spacing:-.3px}
 .cnt{font-size:12px;background:#22304a;border:1px solid #32456a;color:#a9c7ef;padding:2px 10px;border-radius:12px;vertical-align:middle;margin-left:8px}
@@ -48,7 +45,6 @@ h1{font-size:23px;font-weight:800;letter-spacing:-.3px}
 .btn.ghost:hover{border-color:#3a4757;filter:none}
 .btn.slim{padding:7px 13px;font-size:11.5px}
 .btn.warn{background:linear-gradient(145deg,#a03c3c,#7c2a2a);border-color:#a34444;box-shadow:0 4px 14px rgba(160,60,60,.25)}
-
 .cats{display:flex;gap:10px;margin:16px 0 12px;flex-wrap:wrap}
 .cat{display:inline-flex;align-items:center;gap:10px;padding:11px 18px;border-radius:13px;border:1px solid var(--line);background:linear-gradient(145deg,#1c2432,#181e28);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;color:var(--mut);font-family:inherit;box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
 .cat:hover{border-color:#3a4757;color:var(--txt);transform:translateY(-1px)}
@@ -56,20 +52,17 @@ h1{font-size:23px;font-weight:800;letter-spacing:-.3px}
 .cat.on{border-color:rgba(77,163,255,.5);background:linear-gradient(90deg,rgba(77,163,255,.2),rgba(77,163,255,.05));color:#fff;box-shadow:0 4px 18px rgba(40,100,190,.22)}
 .cat-ic{font-size:15px}
 .cn{margin-left:4px;background:#232e3d;border:1px solid #32405a;padding:1px 8px;border-radius:10px;font-size:10.5px;color:#aeb9cc;font-style:normal;font-weight:700}
-
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 10px}
 .chip{display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--mut);font-size:12.5px;font-weight:700;cursor:pointer;user-select:none;transition:all .18s}
 .chip:hover{border-color:var(--cc,var(--acc));color:var(--txt)}
 .chip:active{transform:scale(.97)}
 .chip.on{border-color:var(--cc,var(--acc));color:#fff;background:var(--ccb,rgba(77,163,255,.18));box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
 .dot{width:7px;height:7px;border-radius:50%;flex:0 0 7px;box-shadow:0 0 8px 1px var(--cc,transparent);transition:box-shadow .25s}
-
 .ctl{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0 4px}
 .inp,.sel{background:#141a23;border:1px solid var(--line);color:var(--txt);padding:10px 13px;border-radius:10px;font-size:14px;font-family:inherit;outline:none;transition:border-color .18s,box-shadow .18s}
 .inp:focus,.sel:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(77,163,255,.14)}
 .sel option{background:#141a23}
 textarea.inp{resize:vertical}
-
 .vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-top:14px}
 .vgrid.grouped{display:block}
 .vcard{background:linear-gradient(145deg,#1c2432,#181e28);border:1px solid var(--line);border-radius:16px;overflow:hidden;position:relative;transition:transform .2s,border-color .2s,box-shadow .2s,opacity .2s;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);animation:cardIn .4s both}
@@ -108,7 +101,6 @@ textarea.inp{resize:vertical}
 [contenteditable]:focus{background:#141a23;box-shadow:0 0 0 3px rgba(77,163,255,.14)}
 [contenteditable]:empty::before{content:attr(data-ph);color:#4a5462}
 .empty{padding:26px;text-align:center;color:var(--mut);border:1px dashed var(--line);border-radius:12px;margin-top:10px}
-
 .gsec{margin:0 0 24px;border-radius:14px;padding:10px;transition:background .2s,outline-color .2s;outline:2px dashed transparent;outline-offset:2px}
 .gsec.dragover{outline-color:var(--gc,#4da3ff);background:rgba(77,163,255,.05)}
 .ghead{display:flex;align-items:center;gap:10px;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:800;margin-bottom:11px}
@@ -118,12 +110,10 @@ textarea.inp{resize:vertical}
 .ghint{font-size:10px;color:#5b6675;font-weight:600;letter-spacing:.5px;text-transform:none;white-space:nowrap}
 .ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}
 .gempty{min-height:64px;display:flex;align-items:center;justify-content:center;border:1px dashed #232b37;border-radius:12px;color:#5b6675;font-size:12px}
-
 .clsgrid{display:flex;flex-direction:column;gap:8px}
 .clsbtn{display:flex;align-items:center;gap:10px;padding:13px 16px;border-radius:12px;border:1px solid var(--line);background:linear-gradient(145deg,#1c2432,#181e28);color:var(--txt);font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s;text-align:left}
 .clsbtn:hover{border-color:var(--cc,var(--acc));transform:translateX(3px)}
 .clsbtn.on{border-color:var(--cc,var(--acc));background:var(--ccb,rgba(77,163,255,.14));box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
-
 .vcard.sk{pointer-events:none;cursor:default}
 .vcard.sk::before{display:none}
 .skph{aspect-ratio:16/10;background:#161c26;position:relative;overflow:hidden}
@@ -131,7 +121,6 @@ textarea.inp{resize:vertical}
 @keyframes skmove{to{transform:translateX(100%)}}
 .skb{height:11px;border-radius:6px;background:#161c26;margin:10px 14px 0;position:relative;overflow:hidden}
 .skb:last-child{margin-bottom:14px}
-
 #lb{position:fixed;inset:0;z-index:600;background:rgba(4,7,11,0);backdrop-filter:blur(0);display:flex;align-items:center;justify-content:center;padding:26px;cursor:zoom-out;opacity:0;transition:opacity .22s,backdrop-filter .22s;pointer-events:none}
 #lb.show{opacity:1;background:rgba(4,7,11,.88);backdrop-filter:blur(9px);pointer-events:auto}
 #lb img{max-width:min(1150px,92vw);max-height:86vh;border-radius:14px;border:1px solid #2e3846;box-shadow:0 30px 90px rgba(0,0,0,.7);transform:scale(.9);opacity:0;transition:transform .24s ease,opacity .24s ease;cursor:zoom-out}
@@ -139,7 +128,6 @@ textarea.inp{resize:vertical}
 .lb-cap{position:absolute;top:20px;left:24px;font-weight:800;font-size:14px;color:#e9edf4;background:rgba(14,17,22,.72);border:1px solid #2e3846;padding:9px 15px;border-radius:12px;backdrop-filter:blur(6px);max-width:70vw}
 .lb-cap span{display:block;font-weight:600;font-size:11px;color:var(--mut);margin-top:3px}
 .lbdot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px}
-
 .back{position:fixed;inset:0;background:rgba(4,7,11,.75);backdrop-filter:blur(7px);z-index:400;display:flex;justify-content:center;align-items:flex-start;overflow-y:auto;padding:34px 14px;animation:fadeIn .2s}
 #croot .back{z-index:420}
 @keyframes up{from{transform:translateY(24px);opacity:0}}
@@ -164,12 +152,10 @@ textarea.inp{resize:vertical}
 .aph-in span{font-size:10.5px}
 .aph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .hint{font-size:11.5px;color:var(--mut);line-height:1.6;margin-top:10px;background:#141a23;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
-
 #troot{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:700;display:flex;flex-direction:column;gap:8px}
 .toast{background:#1c2531;border:1px solid #32435c;border-left:3px solid var(--acc);padding:12px 16px;border-radius:12px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.45);animation:up .3s;max-width:360px;transition:opacity .35s,transform .35s}
 .toast.warn{border-left-color:var(--red)}
 .toast.out{opacity:0;transform:translateY(8px)}
-
 @media(max-width:760px){
 body{font-size:13.5px}
 #topbar{height:54px;padding:0 12px}
@@ -230,9 +216,6 @@ h1{font-size:20px}
 <body>
 <div id="errbox"></div>
 <script>
-/* Показываем бокс ТОЛЬКО для настоящих JS-ошибок.
-   Ошибки загрузки картинок/скриптов приходят как обычный Event,
-   без .message — их фильтруем через instanceof ErrorEvent. */
 window.addEventListener('error',function(ev){
  if(!(ev instanceof ErrorEvent)){return}
  if(!ev.message){return}
@@ -282,14 +265,13 @@ window.addEventListener('error',function(ev){
 </main>
 
 <input type="file" id="fileInp" accept="image/*" style="display:none">
-
 <div id="lb"><div class="lb-cap" id="lbCap"></div><img id="lbImg" alt=""></div>
 <div id="mroot"></div>
 <div id="croot"></div>
 <div id="troot"></div>
 
 <script>
-/* Репозиторий определяется автоматически по адресу сайта */
+/* ===================== АВТООПРЕДЕЛЕНИЕ РЕПОЗИТОРИЯ ===================== */
 var REPO=(function(){
  var h=location.hostname,p=location.pathname;
  if(!/\.github\.io$/.test(h)){return null}
@@ -299,7 +281,7 @@ var REPO=(function(){
 })();
 var BRANCH='main';
 
-/* ============ БЕЗОПАСНОЕ ХРАНИЛИЩЕ ============ */
+/* ===================== БЕЗОПАСНОЕ ХРАНИЛИЩЕ ===================== */
 var LS=(function(){
  var mem={},ok=false;
  try{
@@ -325,7 +307,7 @@ var LS=(function(){
  };
 })();
 
-/* ============ УТИЛИТЫ ============ */
+/* ===================== УТИЛИТЫ ===================== */
 function $(s){return document.querySelector(s)}
 function qsa(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}
@@ -346,7 +328,28 @@ function toast(msg,warn){
 function b64e(s){return btoa(unescape(encodeURIComponent(s)))}
 function b64d(s){return decodeURIComponent(escape(atob(s)))}
 
-/* ============ ВЕДОМСТВА ============ */
+/* ===================== FETCH С ТАЙМАУТОМ =====================
+   Обычный fetch() без signal может висеть до встроенного таймаута
+   браузера (в некоторых сетях — минуты). Оборачиваем в AbortController. */
+function fetchT(url,opts,ms){
+ var ctl=null,to=null;
+ try{ if(typeof AbortController!=='undefined'){ctl=new AbortController()} }catch(e){ctl=null}
+ var o={};
+ if(opts){for(var k in opts){if(Object.prototype.hasOwnProperty.call(opts,k)){o[k]=opts[k]}}}
+ if(ctl){o.signal=ctl.signal}
+ if(ctl){
+  to=setTimeout(function(){try{ctl.abort()}catch(e){}},ms||8000);
+ }
+ return fetch(url,o).then(function(r){
+  if(to){clearTimeout(to);to=null}
+  return r;
+ },function(e){
+  if(to){clearTimeout(to);to=null}
+  throw e;
+ });
+}
+
+/* ===================== ВЕДОМСТВА ===================== */
 var DEPS=[
  {k:'uvd',  s:'УМВД',        n:'УМВД',                 c:'#4da3ff', cat:'main'},
  {k:'gibdd',s:'ОГИБДД',      n:'ОГИБДД',               c:'#56ccff', cat:'main'},
@@ -361,7 +364,7 @@ var DEPS=[
 ];
 function dep(k){for(var i=0;i<DEPS.length;i++){if(DEPS[i].k===k){return DEPS[i]}}return DEPS[0]}
 
-/* ============ КЛАССЫ МАШИН ============ */
+/* ===================== КЛАССЫ МАШИН ===================== */
 var CLASSES=[
  {k:'premium', n:'Премиум',       c:'#f7c948'},
  {k:'high',    n:'Высший класс',  c:'#c084fc'},
@@ -390,7 +393,7 @@ var CATS={
 };
 function catName(kind,cat){var a=CATS[kind];for(var i=0;i<a.length;i++){if(a[i].k===cat){return a[i].n}}return a[0].n}
 
-/* ============ ДАННЫЕ / СИДЫ ============ */
+/* ===================== ДАННЫЕ ===================== */
 var LOCAL_K='mvd_garage_local', CACHE_K='mvd_garage_cache', KEY_K='mvd_garage_admin_key', PENDING_K='mvd_garage_pending';
 var ITEMS=[], localRev=0, pendingRev=null, needSeed=false;
 var ADMIN_KEY=LS.get(KEY_K)||'';
@@ -444,30 +447,6 @@ function loadLocal(){
  var d=null;
  try{ d=JSON.parse(LS.get(LOCAL_K)||'null') }catch(e){}
  if(d&&toArr(d.items)){return toArr(d.items)}
- var map={uvd:'uvd',gibdd:'gibdd',mz:'cgb',mo:'vs',cgb:'cgb',vs:'vs',rzd:'rzd',fsb:'fsb',sk:'sk',prok:'prok',mchs:'mchs',fso:'fso'};
- var oldKeys=['mvd_garage_v3','mvd_garage_v2','mvd_garage_v1'];
- for(var i=0;i<oldKeys.length;i++){
-  var o=null;
-  try{ o=JSON.parse(LS.get(oldKeys[i])||'null') }catch(e){}
-  if(!o){continue}
-  var ev={fsb:1,sk:1,prok:1,mchs:1},items=[];
-  if(o.items){
-   var a=toArr(o.items)||[];
-   for(var j=0;j<a.length;j++){ if(map[a[j]&&a[j].dep]){items.push(a[j])} }
-  }else if(o.cars){
-   var cs=o.cars;
-   for(var j2=0;j2<cs.length;j2++){
-    var c=cs[j2],nk=map[c.dep];
-    if(!nk){continue}
-    items.push({id:c.id,kind:'cars',cat:ev[c.dep]?'event':'main',dep:nk,name:c.name,desc:c.desc,speed:c.speed,photo:c.photo||''});
-   }
-  }
-  if(items.length){
-   saveLocal(items);
-   LS.remove(oldKeys[i]);
-   return items;
-  }
- }
  return seed();
 }
 function saveLocal(items){
@@ -479,7 +458,7 @@ function loadCache(){
   var c=JSON.parse(LS.get(CACHE_K)||'null');
   if(c){
    var a=toArr(c.items);
-   if(a){return {rev:(typeof c.rev==='number'?c.rev:0),items:a}}
+   if(a&&a.length){return {rev:(typeof c.rev==='number'?c.rev:0),items:a}}
   }
  }catch(e){}
  return null;
@@ -494,15 +473,18 @@ function countItems(kind,cat,dp){
  return n;
 }
 
-/* ============ СИНХРОНИЗАЦИЯ ============ */
+/* ===================== СИНХРОНИЗАЦИЯ ===================== */
+var NET_TO_READ=8000;   /* таймаут чтения */
+var NET_TO_WRITE=20000; /* таймаут записи */
+
 function setSync(cls,txt){
  var s=$('#sync');
- s.className='sync '+(cls||'');
- if(txt){$('#syncTxt').textContent=txt}
+ if(s){s.className='sync '+(cls||'');}
+ if(txt){var e=$('#syncTxt');if(e){e.textContent=txt}}
 }
 function rawUrl(file,br){return 'https://raw.githubusercontent.com/'+REPO+'/'+(br||BRANCH)+'/'+file+'?v='+Date.now()}
 function rawGet(file,br){
- return fetch(rawUrl(file,br),{cache:'no-store'}).then(function(r){
+ return fetchT(rawUrl(file,br),{cache:'no-store'},NET_TO_READ).then(function(r){
   if(r.status===404){var e=new Error('404');e.nf=true;throw e}
   if(!r.ok){throw new Error(r.status)}
   return r.text();
@@ -511,7 +493,7 @@ function rawGet(file,br){
 function apiText(path,auth){
  var h={Accept:'application/vnd.github.raw'};
  if(auth&&ADMIN_KEY){h.Authorization='token '+ADMIN_KEY}
- return fetch('https://api.github.com/repos/'+REPO+'/contents/'+path+'?t='+Date.now(),{headers:h,cache:'no-store'}).then(function(r){
+ return fetchT('https://api.github.com/repos/'+REPO+'/contents/'+path+'?t='+Date.now(),{headers:h,cache:'no-store'},NET_TO_READ).then(function(r){
   if(!r.ok){var e=new Error(r.status);if(r.status===403&&!(auth&&ADMIN_KEY)){e.rl=true}throw e}
   return r.text();
  });
@@ -519,18 +501,18 @@ function apiText(path,auth){
 function apiBlobText(sha){
  var h={Accept:'application/vnd.github+json'};
  if(ADMIN_KEY){h.Authorization='token '+ADMIN_KEY}
- return fetch('https://api.github.com/repos/'+REPO+'/git/blobs/'+sha+'?t='+Date.now(),{headers:h,cache:'no-store'}).then(function(r){
+ return fetchT('https://api.github.com/repos/'+REPO+'/git/blobs/'+sha+'?t='+Date.now(),{headers:h,cache:'no-store'},NET_TO_READ).then(function(r){
   if(!r.ok){var e=new Error(r.status);if(r.status===403&&!ADMIN_KEY){e.rl=true}throw e}
   return r.json();
  }).then(function(j){return b64d(j.content)});
 }
 function ghHeaders(){return {Authorization:'token '+ADMIN_KEY,Accept:'application/vnd.github+json','Content-Type':'application/json'}}
 function ghReq(method,path,body){
- return fetch('https://api.github.com/repos/'+REPO+'/'+path,{
+ return fetchT('https://api.github.com/repos/'+REPO+'/'+path,{
   method:method,
   headers:ghHeaders(),
   body:body?JSON.stringify(body):undefined
- }).then(function(r){
+ },NET_TO_WRITE).then(function(r){
   if(!r.ok){throw r.status}
   return r.status===204?null:r.json();
  });
@@ -542,13 +524,13 @@ function parseRevTxt(t){
  return {rev:parseInt(t.substring(0,i),10)||0,sha:t.substring(i+1).trim()};
 }
 function checkToken(tok){
- return fetch('https://api.github.com/user',{headers:{Authorization:'token '+tok}})
-  .then(function(r){ if(!r.ok){throw r.status} return fetch('https://api.github.com/repos/'+REPO,{headers:{Authorization:'token '+tok}}) })
+ return fetchT('https://api.github.com/user',{headers:{Authorization:'token '+tok}},NET_TO_READ)
+  .then(function(r){ if(!r.ok){throw r.status} return fetchT('https://api.github.com/repos/'+REPO,{headers:{Authorization:'token '+tok}},NET_TO_READ) })
   .then(function(r){ if(!r.ok){throw r.status} return r.json() })
   .then(function(j){ return !j.permissions||!!j.permissions.push });
 }
 
-/* ============ СОХРАНЕНИЕ ============ */
+/* ===================== СОХРАНЕНИЕ ===================== */
 var pushTimer=null, pushInFlight=false, dataDirty=false, pushRetries=0, pushToastShown=false;
 var lastCommitSha=null, lastTreeSha=null;
 
@@ -641,17 +623,18 @@ function doPush(){
  });
 }
 
-/* ============ ЧТЕНИЕ ============ */
+/* ===================== ЧТЕНИЕ ===================== */
+/* raw.githubusercontent.com — быстрый CDN без лимитов, пробуем его первым.
+   GitHub API — только как резервный канал. */
 function resolveRev(){
- return apiText('rev.txt',true).catch(function(e){
-  if(e&&e.rl){throw e}
-  return apiText('rev.txt',false);
- }).catch(function(e){
-  if(e&&e.rl){throw e}
-  return rawGet('rev.txt').then(function(t){return parseRevTxt(t)});
- }).catch(function(e){
+ return rawGet('rev.txt').then(function(t){return parseRevTxt(t)})
+ .catch(function(e){
   if(e&&e.nf){return {rev:0,sha:null}}
-  throw e;
+  return apiText('rev.txt',!!ADMIN_KEY).then(function(t){return parseRevTxt(t)})
+   .catch(function(e2){
+    if(e2&&e2.nf){return {rev:0,sha:null}}
+    throw e2;
+   });
  });
 }
 function pullData(rv){
@@ -659,11 +642,8 @@ function pullData(rv){
   var j=null;
   try{j=JSON.parse(d)}catch(e){}
   var items=toArr(j&&j.items);
-  if(!items){throw new Error('bad')}
-  if(typeof j.rev!=='number'||j.rev>=rv.rev){
-   return {rev:(typeof j.rev==='number')?Math.max(j.rev,rv.rev):rv.rev,items:items};
-  }
-  throw new Error('stale');
+  if(!items||!items.length){throw new Error('bad')}
+  return {rev:(typeof j.rev==='number')?Math.max(j.rev,rv.rev):rv.rev,items:items};
  }).catch(function(){
   if(rv.sha){
    return apiBlobText(rv.sha).then(function(txt){
@@ -684,42 +664,48 @@ function applyData(rev,items){
  render();
 }
 
+/* ===================== ПОЛЛИНГ ===================== */
+var rawTickBusy=false;
 function rawTick(){
+ if(rawTickBusy){return}
+ if(!REPO){return}
+ rawTickBusy=true;
+ var done=function(){rawTickBusy=false};
  rawGet('rev.txt').then(function(t){
   var rv=parseRevTxt(t);
   if(rv.rev===localRev){setSync('ok','GitHub');return}
-  if(rv.rev<pendingRev){return}
-  if(rv.rev===pendingRev){return}
   if(rv.rev<localRev){return}
+  if(rv.rev===pendingRev){return}
   if(adminMode&&(dataDirty||pushInFlight)){return}
   setSync('busy','Обновление…');
   return rawGet('data.json').then(function(d){
    var j=null;
    try{j=JSON.parse(d)}catch(e){}
    var items=toArr(j&&j.items);
-   if(items&&(typeof j.rev!=='number'||j.rev>=rv.rev)){
+   if(items&&items.length){
     applyData((typeof j.rev==='number')?Math.max(j.rev,rv.rev):rv.rev,items);
     setSync('ok','GitHub');
-   }else{
-    apiTick(true);
    }
   });
  }).catch(function(e){
   if(e&&e.nf){setSync('ok','GitHub');return}
   setSync('err','Нет связи');
- });
+ }).then(done,done);
 }
 
-var apiQuietUntil=0, nextViewerApi=0;
+var apiQuietUntil=0, nextViewerApi=0, apiTickBusy=false;
 function apiTick(force){
+ if(apiTickBusy){return}
  var now=Date.now();
  if(now<apiQuietUntil){return}
  if(!ADMIN_KEY){
   if(!force&&now<nextViewerApi){return}
   if(force&&now<nextViewerApi-55000){return}
  }
+ apiTickBusy=true;
+ var done=function(){apiTickBusy=false};
  apiText('rev.txt',!!ADMIN_KEY).then(function(t){
-  if(!ADMIN_KEY){nextViewerApi=now+75000}
+  if(!ADMIN_KEY){nextViewerApi=now+90000}
   var rv=parseRevTxt(t);
   if(rv.rev<=localRev||rv.rev===pendingRev){setSync('ok','GitHub');return}
   if(adminMode&&(dataDirty||pushInFlight)){return}
@@ -730,15 +716,19 @@ function apiTick(force){
   });
  }).catch(function(e){
   if(e&&e.rl){apiQuietUntil=now+600000;return}
- });
+ }).then(done,done);
 }
 function startPoll(){
- setInterval(rawTick,1000);
- setInterval(function(){apiTick(false)},3000);
- document.addEventListener('visibilitychange',function(){ if(!document.hidden){rawTick();apiTick(true)} });
+ setInterval(rawTick,2000);
+ setInterval(function(){apiTick(false)},10000);
+ document.addEventListener('visibilitychange',function(){
+  if(!document.hidden){rawTick();apiTick(true)}
+ });
 }
 
-/* ============ ЗАГРУЗКА СТРАНИЦЫ ============ */
+/* ===================== ЗАГРУЗКА СТРАНИЦЫ =====================
+   Главное отличие: если кэш есть — рендерим мгновенно, синхронно,
+   ещё ДО任何 сетевых запросов. Сеть догоняет в фоне. */
 function showSkeleton(){
  var h='';
  for(var i=0;i<10;i++){
@@ -751,64 +741,72 @@ function showSkeleton(){
  $('#vgrid').innerHTML=h;
 }
 function initRemote(){
- setSync('busy','Подключение…');
- showSkeleton();
  var cache=loadCache();
+
+ /* 1) Мгновенный рендер из кэша — никаких задержек. */
+ if(cache&&cache.items&&cache.items.length){
+  ITEMS=cache.items;
+  localRev=cache.rev;
+  needSeed=false;
+  booted=true;
+  render();
+  setSync('busy','Проверка обновлений…');
+ }else{
+  setSync('busy','Подключение…');
+  showSkeleton();
+ }
+
+ /* 2) Сеть — в фоне. Благодаря таймаутам в fetchT не зависнет. */
  resolveRev().then(function(rv){
   var noData=(rv===null||rv.nf||rv.rev===0);
   if(noData){
-   if(cache){ ITEMS=cache.items;localRev=cache.rev;needSeed=false;if(ADMIN_KEY){dataDirty=true} }
-   else{ ITEMS=seed();needSeed=true }
+   if(!ITEMS.length){
+    ITEMS=seed();
+    needSeed=true;
+   }
    finishBoot('ok','GitHub');
    return;
   }
-  if(cache&&cache.rev>rv.rev){
-   ITEMS=cache.items;
-   localRev=cache.rev;
-   needSeed=false;
-   if(ADMIN_KEY){ dataDirty=true }
-   finishBoot('ok','GitHub');
-   return;
-  }
-  if(cache&&cache.rev===rv.rev){
-   ITEMS=cache.items;
-   localRev=rv.rev;
-   needSeed=false;
+  /* Если кэш уже актуальнее — не перезагружаем. */
+  if(ITEMS.length&&localRev>=rv.rev){
    finishBoot('ok','GitHub');
    return;
   }
   setSync('busy','Загрузка…');
-  pullData(rv).then(function(res){
-   if(res&&res.items){ ITEMS=res.items;localRev=res.rev;cacheItems();needSeed=false }
-   else{
-    if(cache){ITEMS=cache.items;localRev=cache.rev;needSeed=false}
-    else{ITEMS=seed();needSeed=true}
+  return pullData(rv).then(function(res){
+   if(res&&res.items&&res.items.length){
+    ITEMS=res.items;
+    localRev=res.rev;
+    cacheItems();
+    needSeed=false;
+   }else if(!ITEMS.length){
+    ITEMS=seed();
+    needSeed=true;
    }
    finishBoot('ok','GitHub');
-  }).catch(function(){
-   if(cache){ITEMS=cache.items;localRev=cache.rev}
-   else{ITEMS=loadLocal()}
-   finishBoot('err','Нет связи');
   });
  }).catch(function(){
-  if(cache){ITEMS=cache.items;localRev=cache.rev}
-  else{ITEMS=loadLocal()}
+  if(!ITEMS.length){
+   ITEMS=loadLocal();
+  }
   finishBoot('err','Нет связи');
  });
 }
 function finishBoot(cls,txt){
- restoreSession(function(){
-  booted=true;
-  setSync(cls,txt);
-  render();
-  startPoll();
- });
+ booted=true;
+ setSync(cls,txt);
+ render();
+ startPoll();
+ /* Проверка токена — тоже в фоне, не блокирует. */
+ if(ADMIN_KEY&&REPO){
+  restoreSession(function(){ if(adminMode){render()} });
+ }
 }
 function restoreSession(cb){
  if(!ADMIN_KEY||!REPO){ if(cb){cb()} return }
  var done=false;
  var finish=function(){ if(!done){done=true;if(cb){cb()}} };
- var to=setTimeout(finish,5000);
+ var to=setTimeout(finish,6000);
  checkToken(ADMIN_KEY).then(function(ok){
   if(done){clearTimeout(to);return}
   clearTimeout(to);
@@ -824,9 +822,11 @@ function restoreSession(cb){
  },function(){ clearTimeout(to);finish() });
 }
 
-/* ============ РЕЖИМ ВЛАДЕЛЬЦА ============ */
+/* ===================== РЕЖИМ ВЛАДЕЛЬЦА ===================== */
 function renderTop(){
- $('#adminZone').innerHTML= adminMode
+ var z=$('#adminZone');
+ if(!z){return}
+ z.innerHTML= adminMode
   ? '<span class="adbadge">✏️ Режим редактора</span><button class="btn ghost slim" onclick="logout()">Выйти</button>'
   : '<button class="btn ghost slim" onclick="askAdmin()">🔒 Вход</button>';
 }
@@ -883,7 +883,7 @@ function logout(){
  toast('Вы вышли из режима редактирования');
 }
 
-/* ============ СОСТОЯНИЕ / РЕНДЕР ============ */
+/* ===================== СОСТОЯНИЕ / РЕНДЕР ===================== */
 var state={kind:'cars',cat:'main',dep:'all',q:''};
 
 function setKind(k){
@@ -891,7 +891,7 @@ function setKind(k){
  state.cat='main';
  state.dep='all';
  state.q='';
- $('#q').value='';
+ var q=$('#q');if(q){q.value=''}
  qsa('.tab').forEach(function(t){t.classList.toggle('on',t.dataset.kind===k)});
  if(!booted){return}
  refade();
@@ -899,7 +899,7 @@ function setKind(k){
 }
 function setCat(c){state.cat=c;state.dep='all';render()}
 function setDep(d){state.dep=d;renderChips();renderGrid()}
-function refade(){var c=$('#content');c.style.animation='none';void c.offsetWidth;c.style.animation=''}
+function refade(){var c=$('#content');if(!c){return}c.style.animation='none';void c.offsetWidth;c.style.animation=''}
 
 function renderHead(){
  var isCars=state.kind==='cars';
@@ -1024,7 +1024,7 @@ function renderGrid(){
 }
 function render(){renderTop();renderHead();renderCats();renderChips();renderGrid()}
 
-/* ============ ФОТО ============ */
+/* ===================== ФОТО ===================== */
 var pickMode=null, pickId=null, addPhoto=null;
 function pickPhoto(mode,id){
  pickMode=mode;
@@ -1032,7 +1032,7 @@ function pickPhoto(mode,id){
  $('#fileInp').value='';
  $('#fileInp').click();
 }
- $('#fileInp').addEventListener('change',function(){
+$('#fileInp').addEventListener('change',function(){
  var f=this.files[0];
  if(!f){return}
  loadFile(f,pickMode,pickId);
@@ -1070,7 +1070,7 @@ function compress(im){
  }
 }
 
-/* ============ ПЕРЕТАСКИВАНИЕ МЕЖДУ КЛАССАМИ ============ */
+/* ===================== ПЕРЕТАСКИВАНИЕ ===================== */
 var vgrid=$('#vgrid');
 function dragHasFiles(e){
  if(!e.dataTransfer||!e.dataTransfer.types){return false}
@@ -1138,7 +1138,7 @@ vgrid.addEventListener('drop',function(e){
  }
 });
 
-/* ============ КЛИКИ ПО СЕТКЕ ============ */
+/* ===================== КЛИКИ ===================== */
 vgrid.addEventListener('click',function(e){
  var t=e.target,card=t.closest('.vcard');
  if(!card){return}
@@ -1189,9 +1189,9 @@ vgrid.addEventListener('paste',function(e){
 document.addEventListener('dragover',function(e){e.preventDefault()});
 document.addEventListener('drop',function(e){e.preventDefault()});
 
- $('#q').addEventListener('input',function(){ if(!booted){return} state.q=this.value.trim();renderGrid() });
+$('#q').addEventListener('input',function(){ if(!booted){return} state.q=this.value.trim();renderGrid() });
 
-/* ============ СМЕНА ВЕДОМСТВА ============ */
+/* ===================== СМЕНА ВЕДОМСТВА ===================== */
 function askOrg(id){
  if(!adminMode){return}
  var it=byId(id);
@@ -1225,7 +1225,7 @@ function setOrg(id,dk){
  toast('«'+(it.name||'без названия')+'»: '+old.s+' → '+dep(dk).s);
 }
 
-/* ============ СМЕНА КЛАССА ============ */
+/* ===================== СМЕНА КЛАССА ===================== */
 function askClass(id){
  if(!adminMode){return}
  var it=byId(id);
@@ -1256,7 +1256,7 @@ function setCls(id,cls){
  toast('«'+(it.name||'без названия')+'» → '+clName(cls));
 }
 
-/* один обработчик для кнопок в модалках выбора */
+/* обработчик для динамических кнопок в модалках */
 document.addEventListener('click',function(e){
  var t=e.target;
  if(!t||!t.closest){return}
@@ -1268,9 +1268,7 @@ document.addEventListener('click',function(e){
  if(el){delItem(el.getAttribute('data-del'))}
 });
 
-/* ============ ЛАЙТБОКС ============ */
-/* ИСПРАВЛЕНО: не сбрасываем src в '' и отменяем старый таймер закрытия,
-   чтобы при быстром открытии нового фото предыдущий таймер его не стёр. */
+/* ===================== ЛАЙТБОКС ===================== */
 var lbCloseTimer=null;
 function openLB(id){
  var it=byId(id);
@@ -1292,17 +1290,15 @@ function closeLB(){
  lbCloseTimer=setTimeout(function(){
   lbCloseTimer=null;
   lb.classList.remove('show');
-  /* ИСПРАВЛЕНО: removeAttribute вместо src='' — иначе браузер
-     пытается загрузить пустой URL и кидает resource error. */
   var img=$('#lbImg');
   if(img){img.removeAttribute('src')}
  },240);
 }
- $('#lb').addEventListener('click',function(e){
+$('#lb').addEventListener('click',function(e){
  if(e.target===this||e.target.id==='lbImg'){closeLB()}
 });
 
-/* ============ МОДАЛКА ДОБАВЛЕНИЯ ============ */
+/* ===================== МОДАЛКА ДОБАВЛЕНИЯ ===================== */
 function closeM(){$('#mroot').innerHTML=''}
 function setAddPrev(src){var z=$('#aphIn');if(z){z.innerHTML='<img src="'+src+'">'}}
 function fillMDeps(cat,sel){
@@ -1401,7 +1397,7 @@ function submitAdd(){
  toast(state.kind==='cars'?'Машина добавлена: «'+name+'»':'Форма добавлена: «'+name+'»');
 }
 
-/* ============ УДАЛЕНИЕ ============ */
+/* ===================== УДАЛЕНИЕ ===================== */
 function closeC(){$('#croot').innerHTML=''}
 function askDel(id){
  if(!adminMode){return}
@@ -1428,7 +1424,7 @@ function delItem(id){
  toast('Карточка удалена');
 }
 
-/* ============ Esc ============ */
+/* ===================== Esc ===================== */
 document.addEventListener('keydown',function(e){
  if(e.key==='Escape'){
   if($('#lb').classList.contains('show')){closeLB()}
@@ -1436,11 +1432,12 @@ document.addEventListener('keydown',function(e){
  }
 });
 
-/* ============ СТАРТ ============ */
+/* ===================== СТАРТ ===================== */
 if(REPO){
  initRemote();
 }else{
  ITEMS=loadLocal();
+ booted=true;
  render();
  setSync('','Локально');
 }
