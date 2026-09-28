@@ -152,6 +152,21 @@ textarea.inp{resize:vertical}
 .aph-in span{font-size:10.5px}
 .aph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .hint{font-size:11.5px;color:var(--mut);line-height:1.6;margin-top:10px;background:#141a23;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+
+/* ======= МЕНЕДЖЕР РАЗДЕЛОВ ======= */
+.deplist-head{font-size:10px;text-transform:uppercase;letter-spacing:1.6px;color:var(--mut);font-weight:800;margin:14px 0 6px}
+.deplist-head:first-child{margin-top:0}
+.deprow{display:flex;align-items:center;gap:8px;padding:5px 0}
+.deprow .ddot{width:10px;height:10px;flex:0 0 10px;border-radius:50%;box-shadow:0 0 8px 1px rgba(0,0,0,.3)}
+.deprow .dep-name{flex:1;min-width:0;padding:8px 10px;font-size:13px}
+.deprow .dep-color{width:34px;height:34px;flex:0 0 34px;padding:2px;border-radius:8px;cursor:pointer;border:1px solid var(--line);background:#141a23}
+.deprow .dep-del{width:34px;height:34px;flex:0 0 34px;padding:0;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center}
+.deprow .dep-del:hover{background:linear-gradient(145deg,#c04646,#8f2f2f)}
+.newdep{border-top:1px dashed #232b37;padding-top:14px;margin-top:18px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.newdep .inp{flex:1 1 160px;min-width:0}
+.newdep .sel{flex:0 0 auto;padding:8px 10px}
+.newdep .btn{flex:0 0 auto}
+
 #troot{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:700;display:flex;flex-direction:column;gap:8px}
 .toast{background:#1c2531;border:1px solid #32435c;border-left:3px solid var(--acc);padding:12px 16px;border-radius:12px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.45);animation:up .3s;max-width:360px;transition:opacity .35s,transform .35s}
 .toast.warn{border-left-color:var(--red)}
@@ -203,6 +218,9 @@ h1{font-size:20px}
 .m-foot{padding:12px 16px}
 .m-foot .btn{flex:1;padding:13px}
 .formgrid{grid-template-columns:1fr}
+.deprow .dep-name{font-size:12.5px}
+.deprow .dep-color{width:32px;height:32px;flex-basis:32px}
+.deprow .dep-del{width:32px;height:32px;flex-basis:32px}
 #lb{padding:12px}
 #lb img{max-width:96vw;max-height:78vh;border-radius:12px}
 .lb-cap{top:12px;left:12px;right:12px;max-width:none;font-size:12px;padding:8px 12px;border-radius:10px}
@@ -328,9 +346,7 @@ function toast(msg,warn){
 function b64e(s){return btoa(unescape(encodeURIComponent(s)))}
 function b64d(s){return decodeURIComponent(escape(atob(s)))}
 
-/* ===================== FETCH С ТАЙМАУТОМ =====================
-   Обычный fetch() без signal может висеть до встроенного таймаута
-   браузера (в некоторых сетях — минуты). Оборачиваем в AbortController. */
+/* ===================== FETCH С ТАЙМАУТОМ ===================== */
 function fetchT(url,opts,ms){
  var ctl=null,to=null;
  try{ if(typeof AbortController!=='undefined'){ctl=new AbortController()} }catch(e){ctl=null}
@@ -349,8 +365,10 @@ function fetchT(url,opts,ms){
  });
 }
 
-/* ===================== ВЕДОМСТВА ===================== */
-var DEPS=[
+/* ===================== РАЗДЕЛЫ (ВЕДОМСТВА) =====================
+   Дефолтный набор. Пользователь может переименовывать, добавлять и
+   удалять (если пусто). Всё хранится в data.json вместе с карточками. */
+var DEFAULT_DEPS=[
  {k:'uvd',  s:'УМВД',        n:'УМВД',                 c:'#4da3ff', cat:'main'},
  {k:'gibdd',s:'ОГИБДД',      n:'ОГИБДД',               c:'#56ccff', cat:'main'},
  {k:'cgb',  s:'ЦГБ/ОКБ',     n:'ЦГБ/ОКБ',              c:'#ff5c5c', cat:'main'},
@@ -362,7 +380,27 @@ var DEPS=[
  {k:'mchs', s:'МЧС',         n:'МЧС',                  c:'#ff8a52', cat:'event'},
  {k:'fso',  s:'ФСО',         n:'ФСО',                  c:'#c084fc', cat:'event'}
 ];
-function dep(k){for(var i=0;i<DEPS.length;i++){if(DEPS[i].k===k){return DEPS[i]}}return DEPS[0]}
+function cloneDeps(src){
+ var out=[];
+ if(!src||!src.length){return out}
+ for(var i=0;i<src.length;i++){
+  var d=src[i];
+  if(!d||!d.k){continue}
+  out.push({
+   k:String(d.k),
+   s:String(d.s||d.n||'—'),
+   n:String(d.n||d.s||'—'),
+   c:String(d.c||'#4da3ff'),
+   cat:(d.cat==='event')?'event':'main'
+  });
+ }
+ return out;
+}
+var DEPS=cloneDeps(DEFAULT_DEPS);
+function dep(k){
+ for(var i=0;i<DEPS.length;i++){if(DEPS[i].k===k){return DEPS[i]}}
+ return {k:k||'_',s:'—',n:'Раздел удалён',c:'#6b7280',cat:'main'};
+}
 
 /* ===================== КЛАССЫ МАШИН ===================== */
 var CLASSES=[
@@ -446,19 +484,30 @@ function toArr(x){
 function loadLocal(){
  var d=null;
  try{ d=JSON.parse(LS.get(LOCAL_K)||'null') }catch(e){}
- if(d&&toArr(d.items)){return toArr(d.items)}
+ if(d){
+  if(d.deps&&Array.isArray(d.deps)&&d.deps.length){DEPS=cloneDeps(d.deps)}
+  if(d.items&&toArr(d.items)){return toArr(d.items)}
+ }
  return seed();
 }
 function saveLocal(items){
- try{ LS.set(LOCAL_K,JSON.stringify({items:items})) }catch(e){ toast('Локальное хранилище переполнено',true) }
+ try{ LS.set(LOCAL_K,JSON.stringify({items:items,deps:DEPS})) }catch(e){ toast('Локальное хранилище переполнено',true) }
 }
-function cacheItems(){try{LS.set(CACHE_K,JSON.stringify({rev:localRev,items:ITEMS}))}catch(e){}}
+function cacheItems(){
+ try{LS.set(CACHE_K,JSON.stringify({rev:localRev,items:ITEMS,deps:DEPS}))}catch(e){}
+}
 function loadCache(){
  try{
   var c=JSON.parse(LS.get(CACHE_K)||'null');
   if(c){
    var a=toArr(c.items);
-   if(a&&a.length){return {rev:(typeof c.rev==='number'?c.rev:0),items:a}}
+   if(a&&a.length){
+    return {
+     rev:(typeof c.rev==='number'?c.rev:0),
+     items:a,
+     deps:(c.deps&&Array.isArray(c.deps)&&c.deps.length)?c.deps:null
+    };
+   }
   }
  }catch(e){}
  return null;
@@ -472,10 +521,15 @@ function countItems(kind,cat,dp){
  }
  return n;
 }
+function countDepUsage(depKey){
+ var n=0;
+ for(var i=0;i<ITEMS.length;i++){if(ITEMS[i].dep===depKey){n++}}
+ return n;
+}
 
 /* ===================== СИНХРОНИЗАЦИЯ ===================== */
-var NET_TO_READ=8000;   /* таймаут чтения */
-var NET_TO_WRITE=20000; /* таймаут записи */
+var NET_TO_READ=8000;
+var NET_TO_WRITE=20000;
 
 function setSync(cls,txt){
  var s=$('#sync');
@@ -549,7 +603,7 @@ function doPush(){
  pushTimer=null;
  if(!adminMode||!REPO||pushInFlight||!dataDirty){ return }
  var rev=(typeof localRev==='number'?localRev:0)+1;
- var snapshot=JSON.stringify({rev:rev,items:ITEMS});
+ var snapshot=JSON.stringify({rev:rev,items:ITEMS,deps:DEPS});
  dataDirty=false;
  needSeed=false;
  pushInFlight=true;
@@ -624,8 +678,6 @@ function doPush(){
 }
 
 /* ===================== ЧТЕНИЕ ===================== */
-/* raw.githubusercontent.com — быстрый CDN без лимитов, пробуем его первым.
-   GitHub API — только как резервный канал. */
 function resolveRev(){
  return rawGet('rev.txt').then(function(t){return parseRevTxt(t)})
  .catch(function(e){
@@ -643,22 +695,35 @@ function pullData(rv){
   try{j=JSON.parse(d)}catch(e){}
   var items=toArr(j&&j.items);
   if(!items||!items.length){throw new Error('bad')}
-  return {rev:(typeof j.rev==='number')?Math.max(j.rev,rv.rev):rv.rev,items:items};
+  return {
+   rev:(typeof j.rev==='number')?Math.max(j.rev,rv.rev):rv.rev,
+   items:items,
+   deps:(j.deps&&Array.isArray(j.deps)&&j.deps.length)?j.deps:null
+  };
  }).catch(function(){
   if(rv.sha){
    return apiBlobText(rv.sha).then(function(txt){
     var j=JSON.parse(txt);
-    return {rev:rv.rev,items:toArr(j.items)||[]};
+    return {
+     rev:rv.rev,
+     items:toArr(j.items)||[],
+     deps:(j.deps&&Array.isArray(j.deps)&&j.deps.length)?j.deps:null
+    };
    });
   }
   return apiText('data.json',!!ADMIN_KEY).then(function(txt){
    var j=JSON.parse(txt);
-   return {rev:(typeof j.rev==='number'?j.rev:rv.rev),items:toArr(j.items)||[]};
+   return {
+    rev:(typeof j.rev==='number'?j.rev:rv.rev),
+    items:toArr(j.items)||[],
+    deps:(j.deps&&Array.isArray(j.deps)&&j.deps.length)?j.deps:null
+   };
   });
  });
 }
-function applyData(rev,items){
+function applyData(rev,items,deps){
  ITEMS=items;
+ if(deps&&Array.isArray(deps)&&deps.length){DEPS=cloneDeps(deps)}
  localRev=rev;
  cacheItems();
  render();
@@ -683,7 +748,11 @@ function rawTick(){
    try{j=JSON.parse(d)}catch(e){}
    var items=toArr(j&&j.items);
    if(items&&items.length){
-    applyData((typeof j.rev==='number')?Math.max(j.rev,rv.rev):rv.rev,items);
+    applyData(
+     (typeof j.rev==='number')?Math.max(j.rev,rv.rev):rv.rev,
+     items,
+     (j.deps&&Array.isArray(j.deps)&&j.deps.length)?j.deps:null
+    );
     setSync('ok','GitHub');
    }
   });
@@ -711,7 +780,7 @@ function apiTick(force){
   if(adminMode&&(dataDirty||pushInFlight)){return}
   setSync('busy','Обновление…');
   return pullData(rv).then(function(res){
-   if(res&&res.items){applyData(res.rev,res.items)}
+   if(res&&res.items){applyData(res.rev,res.items,res.deps)}
    setSync('ok','GitHub');
   });
  }).catch(function(e){
@@ -726,9 +795,7 @@ function startPoll(){
  });
 }
 
-/* ===================== ЗАГРУЗКА СТРАНИЦЫ =====================
-   Главное отличие: если кэш есть — рендерим мгновенно, синхронно,
-   ещё ДО任何 сетевых запросов. Сеть догоняет в фоне. */
+/* ===================== ЗАГРУЗКА ===================== */
 function showSkeleton(){
  var h='';
  for(var i=0;i<10;i++){
@@ -743,9 +810,9 @@ function showSkeleton(){
 function initRemote(){
  var cache=loadCache();
 
- /* 1) Мгновенный рендер из кэша — никаких задержек. */
  if(cache&&cache.items&&cache.items.length){
   ITEMS=cache.items;
+  if(cache.deps&&cache.deps.length){DEPS=cloneDeps(cache.deps)}
   localRev=cache.rev;
   needSeed=false;
   booted=true;
@@ -756,7 +823,6 @@ function initRemote(){
   showSkeleton();
  }
 
- /* 2) Сеть — в фоне. Благодаря таймаутам в fetchT не зависнет. */
  resolveRev().then(function(rv){
   var noData=(rv===null||rv.nf||rv.rev===0);
   if(noData){
@@ -767,7 +833,6 @@ function initRemote(){
    finishBoot('ok','GitHub');
    return;
   }
-  /* Если кэш уже актуальнее — не перезагружаем. */
   if(ITEMS.length&&localRev>=rv.rev){
    finishBoot('ok','GitHub');
    return;
@@ -776,6 +841,7 @@ function initRemote(){
   return pullData(rv).then(function(res){
    if(res&&res.items&&res.items.length){
     ITEMS=res.items;
+    if(res.deps&&res.deps.length){DEPS=cloneDeps(res.deps)}
     localRev=res.rev;
     cacheItems();
     needSeed=false;
@@ -797,7 +863,6 @@ function finishBoot(cls,txt){
  setSync(cls,txt);
  render();
  startPoll();
- /* Проверка токена — тоже в фоне, не блокирует. */
  if(ADMIN_KEY&&REPO){
   restoreSession(function(){ if(adminMode){render()} });
  }
@@ -827,7 +892,9 @@ function renderTop(){
  var z=$('#adminZone');
  if(!z){return}
  z.innerHTML= adminMode
-  ? '<span class="adbadge">✏️ Режим редактора</span><button class="btn ghost slim" onclick="logout()">Выйти</button>'
+  ? '<button class="btn ghost slim" onclick="openDepsManager()" title="Управление разделами">⚙️ Разделы</button>'+
+    '<span class="adbadge">✏️ Редактор</span>'+
+    '<button class="btn ghost slim" onclick="logout()">Выйти</button>'
   : '<button class="btn ghost slim" onclick="askAdmin()">🔒 Вход</button>';
 }
 function askAdmin(){
@@ -882,6 +949,123 @@ function logout(){
  render();
  toast('Вы вышли из режима редактирования');
 }
+
+/* ===================== МЕНЕДЖЕР РАЗДЕЛОВ ===================== */
+var DEP_PALETTE=['#4da3ff','#56ccff','#ff5c5c','#2fd97a','#ff9a3d','#818cf8','#e05c82','#f7c948','#ff8a52','#c084fc','#7dd3fc','#a78bfa','#f472b6','#34d399','#fbbf24'];
+
+function openDepsManager(){
+ if(!adminMode){return}
+ renderDepsModal();
+}
+function renderDepsModal(){
+ var mainRows='',eventRows='';
+ for(var i=0;i<DEPS.length;i++){
+  var row=depRowHtml(DEPS[i]);
+  if(DEPS[i].cat==='event'){eventRows+=row}else{mainRows+=row}
+ }
+ var h=
+  '<div class="deplist-head">Основной список</div>'+
+  '<div>'+(mainRows||'<div style="color:#5b6675;font-size:12px;padding:6px 0">Пока нет разделов</div>')+'</div>'+
+  '<div class="deplist-head">Для мероприятий</div>'+
+  '<div>'+(eventRows||'<div style="color:#5b6675;font-size:12px;padding:6px 0">Пока нет разделов</div>')+'</div>'+
+  '<div class="newdep">'+
+   '<input class="inp" id="newDepName" type="text" maxlength="40" placeholder="Название нового раздела" autocomplete="off">'+
+   '<select class="sel" id="newDepCat">'+
+    '<option value="main">Основной</option>'+
+    '<option value="event">Мероприятия</option>'+
+   '</select>'+
+   '<button class="btn" onclick="addDepFromModal()">＋ Добавить</button>'+
+  '</div>';
+ $('#croot').innerHTML=
+ '<div class="back" onclick="if(event.target===this)closeC()"><div class="modal" style="max-width:520px">'+
+  '<div class="m-head"><div class="mh-nm" style="font-size:17px">⚙️ Разделы (ведомства)</div>'+
+  '<div class="mh-sub">Переименование применяется сразу ко всем карточкам. Удалять можно только пустые разделы. Изменения сохраняются вместе с данными.</div>'+
+  '<button class="m-close" onclick="closeC()">✕</button></div>'+
+  '<div class="m-body">'+h+'</div>'+
+  '<div class="m-foot"><button class="btn ghost" onclick="closeC()">Готово</button></div>'+
+ '</div></div>';
+ setTimeout(function(){ var n=$('#newDepName'); if(n){n.focus()} },60);
+}
+function depRowHtml(d){
+ return '<div class="deprow" data-depk="'+esc(d.k)+'">'+
+  '<span class="ddot" style="background:'+d.c+'"></span>'+
+  '<input class="inp dep-name" type="text" maxlength="40" data-depk="'+esc(d.k)+'" value="'+esc(d.n)+'" placeholder="Название" autocomplete="off">'+
+  '<input class="dep-color" type="color" data-depk="'+esc(d.k)+'" value="'+d.c+'" title="Цвет">'+
+  '<button class="btn warn slim dep-del" data-depdel="'+esc(d.k)+'" title="Удалить">✕</button>'+
+ '</div>';
+}
+function findDep(k){
+ for(var i=0;i<DEPS.length;i++){if(DEPS[i].k===k){return DEPS[i]}}
+ return null;
+}
+function addDepFromModal(){
+ if(!adminMode){return}
+ var nEl=$('#newDepName'),cEl=$('#newDepCat');
+ var name=nEl?nEl.value.trim():'';
+ if(!name){toast('Введите название раздела',true);if(nEl){nEl.focus()}return}
+ var cat=cEl?cEl.value:'main';
+ if(cat!=='event'){cat='main'}
+ var lower=name.toLowerCase();
+ for(var i=0;i<DEPS.length;i++){
+  if(DEPS[i].n.toLowerCase()===lower&&DEPS[i].cat===cat){
+   toast('Такой раздел уже есть в этой категории',true);return;
+  }
+ }
+ var k='dep_'+Date.now().toString(36)+Math.floor(Math.random()*99);
+ var c=DEP_PALETTE[DEPS.length%DEP_PALETTE.length];
+ DEPS.push({k:k,s:name,n:name,c:c,cat:cat});
+ commit();
+ render();
+ renderDepsModal();
+ toast('Раздел добавлен: «'+name+'»');
+}
+function deleteDep(k){
+ if(!adminMode){return}
+ var d=findDep(k);
+ if(!d){return}
+ var used=countDepUsage(k);
+ if(used>0){
+  toast('В разделе «'+d.n+'» '+used+' карточек — сначала перенесите или удалите их',true);
+  return;
+ }
+ if(!confirm('Удалить раздел «'+d.n+'»?')){return}
+ for(var i=0;i<DEPS.length;i++){
+  if(DEPS[i].k===k){DEPS.splice(i,1);break}
+ }
+ commit();
+ render();
+ renderDepsModal();
+ toast('Раздел удалён');
+}
+/* изменение названия / цвета в модалке */
+document.addEventListener('change',function(e){
+ var t=e.target;
+ if(!t||!t.getAttribute){return}
+ var k=t.getAttribute('data-depk');
+ if(!k){return}
+ var d=findDep(k);
+ if(!d){return}
+ if(t.classList&&t.classList.contains('dep-name')){
+  var v=t.value.trim();
+  if(!v){t.value=d.n;return}
+  if(v===d.n){return}
+  d.n=v;
+  d.s=v;
+  commit();
+  render();
+ }else if(t.classList&&t.classList.contains('dep-color')){
+  var cv=t.value;
+  if(!/^#[0-9a-fA-F]{6}$/.test(cv)){return}
+  d.c=cv;
+  var row=t.closest('.deprow');
+  if(row){
+   var dot=row.querySelector('.ddot');
+   if(dot){dot.style.background=cv;dot.style.boxShadow='0 0 8px 1px '+cv+'66'}
+  }
+  commit();
+  render();
+ }
+});
 
 /* ===================== СОСТОЯНИЕ / РЕНДЕР ===================== */
 var state={kind:'cars',cat:'main',dep:'all',q:''};
@@ -948,7 +1132,7 @@ function cardHtml(it,i){
  if(A){
   ce=' contenteditable="true" spellcheck="false"';
   tools='<div class="vph-tools">'+
-   '<button class="vtool vtool-org" title="Сменить ведомство">🏷</button>'+
+   '<button class="vtool vtool-org" title="Сменить раздел">🏷</button>'+
    (G?'<button class="vtool vtool-cls" title="Изменить класс">⇄</button>':'')+
    '<button class="vtool vtool-sw" title="Загрузить / сменить фото">↻</button>'+
    '<button class="vtool vtool-del" title="Удалить карточку">✕</button>'+
@@ -1191,24 +1375,29 @@ document.addEventListener('drop',function(e){e.preventDefault()});
 
 $('#q').addEventListener('input',function(){ if(!booted){return} state.q=this.value.trim();renderGrid() });
 
-/* ===================== СМЕНА ВЕДОМСТВА ===================== */
+/* ===================== СМЕНА РАЗДЕЛА ===================== */
 function askOrg(id){
  if(!adminMode){return}
  var it=byId(id);
  if(!it){return}
  var cur=it.dep;
  var h='';
- for(var i=0;i<DEPS.length;i++){
-  if(DEPS[i].cat!==it.cat){continue}
-  h+='<button class="clsbtn'+(DEPS[i].k===cur?' on':'')+'" style="--cc:'+DEPS[i].c+';--ccb:'+hex2rgba(DEPS[i].c,.14)+'" data-setorg="'+id+'" data-val="'+DEPS[i].k+'">'+
-   '<span class="dot" style="background:'+DEPS[i].c+'"></span>'+esc(DEPS[i].n)+
-   (DEPS[i].k===cur?'<b class="cn" style="margin-left:auto">текущее</b>':'')+
-   '</button>';
+ if(!DEPS.length){
+  h='<div style="color:#8b95a7;font-size:12.5px">Нет доступных разделов. Добавьте их через ⚙️ Разделы.</div>';
+ }else{
+  for(var i=0;i<DEPS.length;i++){
+   if(DEPS[i].cat!==it.cat){continue}
+   h+='<button class="clsbtn'+(DEPS[i].k===cur?' on':'')+'" style="--cc:'+DEPS[i].c+';--ccb:'+hex2rgba(DEPS[i].c,.14)+'" data-setorg="'+id+'" data-val="'+DEPS[i].k+'">'+
+    '<span class="dot" style="background:'+DEPS[i].c+'"></span>'+esc(DEPS[i].n)+
+    (DEPS[i].k===cur?'<b class="cn" style="margin-left:auto">текущее</b>':'')+
+    '</button>';
+  }
  }
  $('#croot').innerHTML=
  '<div class="back" onclick="if(event.target===this)closeC()"><div class="modal smw">'+
-  '<div class="m-head"><div class="mh-nm" style="font-size:16px">Ведомство</div>'+
-  '<div class="mh-sub">«'+esc(it.name||'Без названия')+'» · '+esc(catName(it.kind,it.cat))+' — куда перевести:</div></div>'+
+  '<div class="m-head"><div class="mh-nm" style="font-size:16px">Раздел</div>'+
+  '<div class="mh-sub">«'+esc(it.name||'Без названия')+'» · '+esc(catName(it.kind,it.cat))+' — куда перевести:</div>'+
+  '<button class="m-close" onclick="closeC()">✕</button></div>'+
   '<div class="m-body"><div class="clsgrid">'+h+'</div></div>'+
   '<div class="m-foot"><button class="btn ghost" onclick="closeC()">Отмена</button></div>'+
  '</div></div>';
@@ -1264,6 +1453,8 @@ document.addEventListener('click',function(e){
  if(el){setOrg(el.getAttribute('data-setorg'),el.getAttribute('data-val'));return}
  el=t.closest('[data-setcls]');
  if(el){setCls(el.getAttribute('data-setcls'),el.getAttribute('data-val'));return}
+ el=t.closest('[data-depdel]');
+ if(el){deleteDep(el.getAttribute('data-depdel'));return}
  el=t.closest('[data-del]');
  if(el){delItem(el.getAttribute('data-del'))}
 });
@@ -1304,10 +1495,11 @@ function setAddPrev(src){var z=$('#aphIn');if(z){z.innerHTML='<img src="'+src+'"
 function fillMDeps(cat,sel){
  var o='';
  for(var i=0;i<DEPS.length;i++){
-  if(DEPS[i].cat===cat){o+='<option value="'+DEPS[i].k+'">'+esc(DEPS[i].n)+'</option>'}
+  if(DEPS[i].cat===cat){o+='<option value="'+esc(DEPS[i].k)+'">'+esc(DEPS[i].n)+'</option>'}
  }
  var el=$('#fDep');
  if(!el){return}
+ if(!o){o='<option value="">— нет разделов —</option>'}
  el.innerHTML=o;
  if(sel){
   for(var j=0;j<DEPS.length;j++){
@@ -1343,7 +1535,7 @@ function openAdd(){
   '<div class="aph" id="aph"><div class="aph-in" id="aphIn"><span class="aph-ic">🖼️</span><b>Загрузить фото</b><span>клик или перетащите файл сюда</span></div></div>'+
   '<div class="formgrid" style="margin-top:16px">'+
   '<div><label class="flab">Категория</label><select class="sel" id="fCat" style="width:100%" onchange="fillMDeps(this.value);updClsRow()">'+catOpts+'</select></div>'+
-  '<div><label class="flab">Ведомство</label><select class="sel" id="fDep" style="width:100%"></select></div>'+
+  '<div><label class="flab">Раздел</label><select class="sel" id="fDep" style="width:100%"></select></div>'+
   (isCars?'<div id="clsRow"><label class="flab">Класс</label><select class="sel" id="fCls" style="width:100%">'+clsOpts+'</select></div>':'')+
   (isCars?'<div><label class="flab">Макс. скорость, км/ч</label><input class="inp" id="fSp" style="width:100%" placeholder="напр. 180"></div>':'')+
   '<div class="full"><label class="flab">Название</label><input class="inp" id="fName" style="width:100%" placeholder="'+(isCars?'напр. Lada Vesta · ДПС':'напр. Летняя форма')+'"></div>'+
@@ -1378,11 +1570,17 @@ function submitAdd(){
  }
  var fCat=$('#fCat'),fDep=$('#fDep'),fCls=$('#fCls'),fDesc=$('#fDesc'),fSp=$('#fSp');
  var isMain=state.kind==='cars'&&fCat&&fCat.value==='main';
+ var depVal=fDep?fDep.value:'';
+ if(!depVal){
+  var firstDep=null;
+  for(var i=0;i<DEPS.length;i++){ if(DEPS[i].cat===(fCat?fCat.value:'main')){firstDep=DEPS[i];break} }
+  if(firstDep){depVal=firstDep.k}
+ }
  ITEMS.unshift({
   id:'n'+Date.now()+Math.floor(Math.random()*999),
   kind:state.kind,
   cat:fCat?fCat.value:'main',
-  dep:fDep?fDep.value:'',
+  dep:depVal,
   cls:(isMain&&fCls)?fCls.value:'',
   name:name,
   desc:fDesc?fDesc.value.trim():'',
@@ -1390,14 +1588,14 @@ function submitAdd(){
   photo:addPhoto||''
  });
  if(fCat){state.cat=fCat.value}
- if(fDep){state.dep=fDep.value}
+ if(depVal){state.dep=depVal}
  closeM();
  commit();
  render();
  toast(state.kind==='cars'?'Машина добавлена: «'+name+'»':'Форма добавлена: «'+name+'»');
 }
 
-/* ===================== УДАЛЕНИЕ ===================== */
+/* ===================== УДАЛЕНИЕ КАРТОЧКИ ===================== */
 function closeC(){$('#croot').innerHTML=''}
 function askDel(id){
  if(!adminMode){return}
@@ -1424,11 +1622,16 @@ function delItem(id){
  toast('Карточка удалена');
 }
 
-/* ===================== Esc ===================== */
+/* ===================== КЛАВИАТУРА ===================== */
 document.addEventListener('keydown',function(e){
  if(e.key==='Escape'){
   if($('#lb').classList.contains('show')){closeLB()}
   else{closeM();closeC()}
+  return;
+ }
+ if(e.key==='Enter'&&e.target){
+  if(e.target.id==='newDepName'){e.preventDefault();addDepFromModal();return}
+  if(e.target.classList&&e.target.classList.contains('dep-name')){e.preventDefault();e.target.blur();return}
  }
 });
 
