@@ -153,7 +153,7 @@ textarea.inp{resize:vertical}
 .aph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .hint{font-size:11.5px;color:var(--mut);line-height:1.6;margin-top:10px;background:#141a23;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 
-/* ======= МЕНЕДЖЕР РАЗДЕЛОВ ======= */
+/* ======= МЕНЕДЖЕР РАЗДЕЛОВ / КЛАССОВ ======= */
 .deplist-head{font-size:10px;text-transform:uppercase;letter-spacing:1.6px;color:var(--mut);font-weight:800;margin:14px 0 6px}
 .deplist-head:first-child{margin-top:0}
 .deprow{display:flex;align-items:center;gap:8px;padding:5px 0}
@@ -162,6 +162,7 @@ textarea.inp{resize:vertical}
 .deprow .dep-color{width:34px;height:34px;flex:0 0 34px;padding:2px;border-radius:8px;cursor:pointer;border:1px solid var(--line);background:#141a23}
 .deprow .dep-del{width:34px;height:34px;flex:0 0 34px;padding:0;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center}
 .deprow .dep-del:hover{background:linear-gradient(145deg,#c04646,#8f2f2f)}
+.deprow .dep-cls-btn{flex:0 0 auto;padding:8px 10px;font-size:11.5px;white-space:nowrap}
 .newdep{border-top:1px dashed #232b37;padding-top:14px;margin-top:18px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .newdep .inp{flex:1 1 160px;min-width:0}
 .newdep .sel{flex:0 0 auto;padding:8px 10px}
@@ -221,6 +222,7 @@ h1{font-size:20px}
 .deprow .dep-name{font-size:12.5px}
 .deprow .dep-color{width:32px;height:32px;flex-basis:32px}
 .deprow .dep-del{width:32px;height:32px;flex-basis:32px}
+.deprow .dep-cls-btn{padding:6px 8px;font-size:10.5px}
 #lb{padding:12px}
 #lb img{max-width:96vw;max-height:78vh;border-radius:12px}
 .lb-cap{top:12px;left:12px;right:12px;max-width:none;font-size:12px;padding:8px 12px;border-radius:10px}
@@ -365,9 +367,41 @@ function fetchT(url,opts,ms){
  });
 }
 
-/* ===================== РАЗДЕЛЫ (ВЕДОМСТВА) =====================
-   Дефолтный набор. Пользователь может переименовывать, добавлять и
-   удалять (если пусто). Всё хранится в data.json вместе с карточками. */
+/* ===================== РАЗДЕЛЫ И КЛАССЫ =====================
+   DEPS[i] = {
+     k, s, n, c, cat,        — раздел (ведомство)
+     classes:[{k,n,c}, ...]  — ПОДРАЗДЕЛЫ этого раздела
+   }
+   Классы свои у каждого раздела. Карточка ссылается на ключ
+   класса своего раздела через поле `cls`. */
+
+function defaultClasses(){
+ return [
+  {k:'premium', n:'Премиум',       c:'#f7c948'},
+  {k:'high',    n:'Высший класс',  c:'#c084fc'},
+  {k:'standard',n:'Стандарт',      c:'#4da3ff'},
+  {k:'budget',  n:'Бюджет',        c:'#8b95a7'},
+  {k:'special', n:'Спецтранспорт', c:'#ff9a3d'}
+ ];
+}
+function defaultClassesFor(cat){
+ if(cat==='event'){return []}
+ return defaultClasses();
+}
+function cloneClasses(src){
+ var out=[];
+ if(!src||!src.length){return out}
+ for(var i=0;i<src.length;i++){
+  var c=src[i];
+  if(!c||!c.k){continue}
+  out.push({
+   k:String(c.k),
+   n:String(c.n||c.s||'—'),
+   c:String(c.c||'#4da3ff')
+  });
+ }
+ return out;
+}
 var DEFAULT_DEPS=[
  {k:'uvd',  s:'УМВД',        n:'УМВД',                 c:'#4da3ff', cat:'main'},
  {k:'gibdd',s:'ОГИБДД',      n:'ОГИБДД',               c:'#56ccff', cat:'main'},
@@ -386,39 +420,65 @@ function cloneDeps(src){
  for(var i=0;i<src.length;i++){
   var d=src[i];
   if(!d||!d.k){continue}
+  var cat=(d.cat==='event')?'event':'main';
+  var classes;
+  if(d.classes&&Array.isArray(d.classes)){
+   classes=cloneClasses(d.classes);
+  }else{
+   classes=defaultClassesFor(cat);
+  }
   out.push({
    k:String(d.k),
    s:String(d.s||d.n||'—'),
    n:String(d.n||d.s||'—'),
    c:String(d.c||'#4da3ff'),
-   cat:(d.cat==='event')?'event':'main'
+   cat:cat,
+   classes:classes
   });
  }
  return out;
 }
 var DEPS=cloneDeps(DEFAULT_DEPS);
-function dep(k){
+
+function findDep(k){
  for(var i=0;i<DEPS.length;i++){if(DEPS[i].k===k){return DEPS[i]}}
- return {k:k||'_',s:'—',n:'Раздел удалён',c:'#6b7280',cat:'main'};
+ return null;
 }
-
-/* ===================== КЛАССЫ МАШИН ===================== */
-var CLASSES=[
- {k:'premium', n:'Премиум',       c:'#f7c948'},
- {k:'high',    n:'Высший класс',  c:'#c084fc'},
- {k:'standard',n:'Стандарт',      c:'#4da3ff'},
- {k:'budget',  n:'Бюджет',        c:'#8b95a7'},
- {k:'special', n:'Спецтранспорт', c:'#ff9a3d'}
-];
-var CLS_MAP={};
-for(var ci=0;ci<CLASSES.length;ci++){CLS_MAP[CLASSES[ci].k]=CLASSES[ci]}
-function clName(k){return CLS_MAP[k]?CLS_MAP[k].n:'Стандарт'}
-function isGrouped(){return state.kind==='cars'&&state.cat==='main'}
+function dep(k){
+ var d=findDep(k);
+ if(d){return d}
+ return {k:k||'_',s:'—',n:'Раздел удалён',c:'#6b7280',cat:'main',classes:[]};
+}
+function classesOfDep(depKey){
+ var d=findDep(depKey);
+ if(!d||!d.classes){return []}
+ return d.classes;
+}
+function classNameOf(depKey, clsKey){
+ var classes=classesOfDep(depKey);
+ for(var i=0;i<classes.length;i++){
+  if(classes[i].k===clsKey){return classes[i].n}
+ }
+ return '—';
+}
+/* карточка попадает в свой класс; если ключ не найден — в первый */
 function clsOf(it){
- if(!it||it.kind!=='cars'||it.cat!=='main'){return null}
- return (it.cls&&CLS_MAP[it.cls])?it.cls:'standard';
+ if(!it){return null}
+ var classes=classesOfDep(it.dep);
+ if(!classes.length){return null}
+ for(var i=0;i<classes.length;i++){
+  if(classes[i].k===it.cls){return it.cls}
+ }
+ return classes[0].k;
+}
+function isGrouped(){
+ if(state.kind!=='cars'){return false}
+ if(state.dep==='all'){return false}
+ var d=findDep(state.dep);
+ return !!(d&&d.classes&&d.classes.length);
 }
 
+/* ===================== КАТЕГОРИИ ===================== */
 var CATS={
  cars:[
   {k:'main', ic:'🏛️', n:'Основной автопарк фракции'},
@@ -524,6 +584,13 @@ function countItems(kind,cat,dp){
 function countDepUsage(depKey){
  var n=0;
  for(var i=0;i<ITEMS.length;i++){if(ITEMS[i].dep===depKey){n++}}
+ return n;
+}
+function countClassUsage(depKey,clsKey){
+ var n=0;
+ for(var i=0;i<ITEMS.length;i++){
+  if(ITEMS[i].dep===depKey&&ITEMS[i].cls===clsKey){n++}
+ }
  return n;
 }
 
@@ -892,7 +959,7 @@ function renderTop(){
  var z=$('#adminZone');
  if(!z){return}
  z.innerHTML= adminMode
-  ? '<button class="btn ghost slim" onclick="openDepsManager()" title="Управление разделами">⚙️ Разделы</button>'+
+  ? '<button class="btn ghost slim" onclick="openDepsManager()" title="Управление разделами и классами">⚙️ Разделы</button>'+
     '<span class="adbadge">✏️ Редактор</span>'+
     '<button class="btn ghost slim" onclick="logout()">Выйти</button>'
   : '<button class="btn ghost slim" onclick="askAdmin()">🔒 Вход</button>';
@@ -952,6 +1019,7 @@ function logout(){
 
 /* ===================== МЕНЕДЖЕР РАЗДЕЛОВ ===================== */
 var DEP_PALETTE=['#4da3ff','#56ccff','#ff5c5c','#2fd97a','#ff9a3d','#818cf8','#e05c82','#f7c948','#ff8a52','#c084fc','#7dd3fc','#a78bfa','#f472b6','#34d399','#fbbf24'];
+var currentClassDepK=null;
 
 function openDepsManager(){
  if(!adminMode){return}
@@ -977,9 +1045,9 @@ function renderDepsModal(){
    '<button class="btn" onclick="addDepFromModal()">＋ Добавить</button>'+
   '</div>';
  $('#croot').innerHTML=
- '<div class="back" onclick="if(event.target===this)closeC()"><div class="modal" style="max-width:520px">'+
+ '<div class="back" onclick="if(event.target===this)closeC()"><div class="modal" style="max-width:560px">'+
   '<div class="m-head"><div class="mh-nm" style="font-size:17px">⚙️ Разделы (ведомства)</div>'+
-  '<div class="mh-sub">Переименование применяется сразу ко всем карточкам. Удалять можно только пустые разделы. Изменения сохраняются вместе с данными.</div>'+
+  '<div class="mh-sub">Переименование применяется сразу ко всем карточкам. Кнопка 📋 открывает <b>классы</b> (подразделы) внутри раздела. Удалять можно только пустые разделы.</div>'+
   '<button class="m-close" onclick="closeC()">✕</button></div>'+
   '<div class="m-body">'+h+'</div>'+
   '<div class="m-foot"><button class="btn ghost" onclick="closeC()">Готово</button></div>'+
@@ -987,16 +1055,14 @@ function renderDepsModal(){
  setTimeout(function(){ var n=$('#newDepName'); if(n){n.focus()} },60);
 }
 function depRowHtml(d){
+ var clsCount=(d.classes&&d.classes.length)?d.classes.length:0;
  return '<div class="deprow" data-depk="'+esc(d.k)+'">'+
   '<span class="ddot" style="background:'+d.c+'"></span>'+
   '<input class="inp dep-name" type="text" maxlength="40" data-depk="'+esc(d.k)+'" value="'+esc(d.n)+'" placeholder="Название" autocomplete="off">'+
   '<input class="dep-color" type="color" data-depk="'+esc(d.k)+'" value="'+d.c+'" title="Цвет">'+
-  '<button class="btn warn slim dep-del" data-depdel="'+esc(d.k)+'" title="Удалить">✕</button>'+
- '</div>';
-}
-function findDep(k){
- for(var i=0;i<DEPS.length;i++){if(DEPS[i].k===k){return DEPS[i]}}
- return null;
+  '<button class="btn ghost slim dep-cls-btn" data-depcls="'+esc(d.k)+'" title="Классы (подразделы)">📋 '+clsCount+'</button>'+
+  '<button class="btn warn slim dep-del" data-depdel="'+esc(d.k)+'" title="Удалить раздел">✕</button>'+
+  '</div>';
 }
 function addDepFromModal(){
  if(!adminMode){return}
@@ -1013,7 +1079,7 @@ function addDepFromModal(){
  }
  var k='dep_'+Date.now().toString(36)+Math.floor(Math.random()*99);
  var c=DEP_PALETTE[DEPS.length%DEP_PALETTE.length];
- DEPS.push({k:k,s:name,n:name,c:c,cat:cat});
+ DEPS.push({k:k,s:name,n:name,c:c,cat:cat,classes:[]});
  commit();
  render();
  renderDepsModal();
@@ -1037,30 +1103,146 @@ function deleteDep(k){
  renderDepsModal();
  toast('Раздел удалён');
 }
-/* изменение названия / цвета в модалке */
+
+/* ===================== МЕНЕДЖЕР КЛАССОВ РАЗДЕЛА ===================== */
+function openClassesManager(depKey){
+ if(!adminMode){return}
+ var d=findDep(depKey);
+ if(!d){toast('Раздел не найден',true);return}
+ currentClassDepK=depKey;
+ renderClassesModal();
+}
+function renderClassesModal(){
+ var d=findDep(currentClassDepK);
+ if(!d){openDepsManager();return}
+ var rows='';
+ for(var i=0;i<d.classes.length;i++){ rows+=classRowHtml(d.classes[i]) }
+ if(!rows){ rows='<div style="color:#5b6675;font-size:12px;padding:6px 0">Пока нет классов — добавьте ниже</div>' }
+ var h=
+  '<div class="deplist-head">Классы раздела «'+esc(d.n)+'»</div>'+
+  '<div>'+rows+'</div>'+
+  '<div class="newdep">'+
+   '<input class="inp" id="newClassName" type="text" maxlength="40" placeholder="Название нового класса" autocomplete="off">'+
+   '<button class="btn" onclick="addClassFromModal()">＋ Добавить</button>'+
+  '</div>';
+ $('#croot').innerHTML=
+ '<div class="back" onclick="if(event.target===this)closeC()"><div class="modal" style="max-width:520px">'+
+  '<div class="m-head"><div class="mh-nm" style="font-size:17px">📋 Классы · '+esc(d.n)+'</div>'+
+  '<div class="mh-sub">Подразделы внутри раздела. Действуют только на карточки этого раздела. Удалять можно только пустые классы.</div>'+
+  '<button class="m-close" onclick="closeC()">✕</button></div>'+
+  '<div class="m-body">'+h+'</div>'+
+  '<div class="m-foot">'+
+   '<button class="btn ghost" onclick="openDepsManager()">← К разделам</button>'+
+   '<button class="btn" onclick="closeC()">Готово</button>'+
+  '</div>'+
+ '</div></div>';
+ setTimeout(function(){ var n=$('#newClassName'); if(n){n.focus()} },60);
+}
+function classRowHtml(c){
+ return '<div class="deprow" data-clsk="'+esc(c.k)+'">'+
+  '<span class="ddot" style="background:'+c.c+'"></span>'+
+  '<input class="inp dep-name class-name" type="text" maxlength="40" data-clsk="'+esc(c.k)+'" value="'+esc(c.n)+'" placeholder="Название" autocomplete="off">'+
+  '<input class="dep-color class-color" type="color" data-clsk="'+esc(c.k)+'" value="'+c.c+'" title="Цвет">'+
+  '<button class="btn warn slim dep-del" data-classdel="'+esc(c.k)+'" title="Удалить класс">✕</button>'+
+  '</div>';
+}
+function addClassFromModal(){
+ if(!adminMode){return}
+ var d=findDep(currentClassDepK);
+ if(!d){return}
+ var nEl=$('#newClassName');
+ var name=nEl?nEl.value.trim():'';
+ if(!name){toast('Введите название класса',true);if(nEl){nEl.focus()}return}
+ for(var i=0;i<d.classes.length;i++){
+  if(d.classes[i].n.toLowerCase()===name.toLowerCase()){
+   toast('Такой класс уже есть в этом разделе',true);return;
+  }
+ }
+ var k='cls_'+Date.now().toString(36)+Math.floor(Math.random()*99);
+ var c=DEP_PALETTE[(d.classes.length+3)%DEP_PALETTE.length];
+ d.classes.push({k:k,n:name,c:c});
+ commit();
+ render();
+ renderClassesModal();
+ toast('Класс добавлен: «'+name+'»');
+}
+function deleteClass(depKey,clsKey){
+ if(!adminMode){return}
+ var d=findDep(depKey);
+ if(!d){return}
+ var idx=-1,clsObj=null;
+ for(var i=0;i<d.classes.length;i++){
+  if(d.classes[i].k===clsKey){idx=i;clsObj=d.classes[i];break}
+ }
+ if(idx<0){return}
+ var used=countClassUsage(depKey,clsKey);
+ if(used>0){
+  toast('В классе «'+clsObj.n+'» '+used+' карточек — сначала перенесите или удалите их',true);
+  return;
+ }
+ if(!confirm('Удалить класс «'+clsObj.n+'»?')){return}
+ d.classes.splice(idx,1);
+ commit();
+ render();
+ renderClassesModal();
+ toast('Класс удалён');
+}
+
+/* изменения полей разделов / классов */
 document.addEventListener('change',function(e){
  var t=e.target;
  if(!t||!t.getAttribute){return}
+
+ /* классы */
+ var ck=t.getAttribute('data-clsk');
+ if(ck){
+  var d=findDep(currentClassDepK);
+  if(!d){return}
+  var c=null;
+  for(var i=0;i<d.classes.length;i++){ if(d.classes[i].k===ck){c=d.classes[i];break} }
+  if(!c){return}
+  if(t.classList&&t.classList.contains('class-name')){
+   var v=t.value.trim();
+   if(!v){t.value=c.n;return}
+   if(v===c.n){return}
+   c.n=v;
+   commit();
+   render();
+  }else if(t.classList&&t.classList.contains('class-color')){
+   var cv=t.value;
+   if(!/^#[0-9a-fA-F]{6}$/.test(cv)){return}
+   c.c=cv;
+   var row=t.closest('.deprow');
+   if(row){
+    var dot=row.querySelector('.ddot');
+    if(dot){dot.style.background=cv;dot.style.boxShadow='0 0 8px 1px '+cv+'66'}
+   }
+   commit();
+   render();
+  }
+  return;
+ }
+
+ /* разделы */
  var k=t.getAttribute('data-depk');
  if(!k){return}
- var d=findDep(k);
- if(!d){return}
+ var dd=findDep(k);
+ if(!dd){return}
  if(t.classList&&t.classList.contains('dep-name')){
-  var v=t.value.trim();
-  if(!v){t.value=d.n;return}
-  if(v===d.n){return}
-  d.n=v;
-  d.s=v;
+  var v2=t.value.trim();
+  if(!v2){t.value=dd.n;return}
+  if(v2===dd.n){return}
+  dd.n=v2; dd.s=v2;
   commit();
   render();
  }else if(t.classList&&t.classList.contains('dep-color')){
-  var cv=t.value;
-  if(!/^#[0-9a-fA-F]{6}$/.test(cv)){return}
-  d.c=cv;
-  var row=t.closest('.deprow');
-  if(row){
-   var dot=row.querySelector('.ddot');
-   if(dot){dot.style.background=cv;dot.style.boxShadow='0 0 8px 1px '+cv+'66'}
+  var cv2=t.value;
+  if(!/^#[0-9a-fA-F]{6}$/.test(cv2)){return}
+  dd.c=cv2;
+  var row2=t.closest('.deprow');
+  if(row2){
+   var dot2=row2.querySelector('.ddot');
+   if(dot2){dot2.style.background=cv2;dot2.style.boxShadow='0 0 8px 1px '+cv2+'66'}
   }
   commit();
   render();
@@ -1092,6 +1274,7 @@ function renderHead(){
   ?'Транспортные средства · нажмите на пустое окно фото, чтобы загрузить изображение'
   :(adminMode?'Форма одежды · нажмите на пустое окно фото, чтобы загрузить изображение':'Форма одежды ведомств');
  if(isCars&&isGrouped()&&adminMode){sub+=' · перетащите машину за фото в другой класс'}
+ else if(isCars&&state.dep==='all'){sub+=' · выберите раздел, чтобы увидеть классы'}
  $('#hSub').textContent=sub;
  $('#cnt').textContent=countItems(state.kind,state.cat,null);
  $('#logoIc').textContent=isCars?'🚔':'🎽';
@@ -1131,9 +1314,10 @@ function cardHtml(it,i){
  }
  if(A){
   ce=' contenteditable="true" spellcheck="false"';
+  var hasCls=(classesOfDep(it.dep).length>0);
   tools='<div class="vph-tools">'+
    '<button class="vtool vtool-org" title="Сменить раздел">🏷</button>'+
-   (G?'<button class="vtool vtool-cls" title="Изменить класс">⇄</button>':'')+
+   (hasCls?'<button class="vtool vtool-cls" title="Изменить класс">⇄</button>':'')+
    '<button class="vtool vtool-sw" title="Загрузить / сменить фото">↻</button>'+
    '<button class="vtool vtool-del" title="Удалить карточку">✕</button>'+
    '</div>';
@@ -1168,17 +1352,20 @@ function renderGrid(){
  var vg=$('#vgrid');
  if(isGrouped()){
   vg.classList.add('grouped');
+  var dObj=findDep(state.dep);
+  var classes=dObj.classes;
   var h='',delay=0;
-  for(var g=0;g<CLASSES.length;g++){
-   var cl=CLASSES[g],sub=[];
+  for(var g=0;g<classes.length;g++){
+   var cl=classes[g],sub=[];
    for(var i=0;i<list.length;i++){ if(clsOf(list[i])===cl.k){sub.push(list[i])} }
    h+='<div class="gsec" data-cls="'+cl.k+'" style="--gc:'+cl.c+'">'+
     '<div class="ghead">'+
     '<span class="gd" style="background:'+cl.c+';box-shadow:0 0 8px '+cl.c+'66"></span>'+
-    '<span class="gname" style="color:'+cl.c+'">'+cl.n+'</span>'+
+    '<span class="gname" style="color:'+cl.c+'">'+esc(cl.n)+'</span>'+
     '<b class="cn">'+sub.length+'</b>'+
     '<span class="gline"></span>'+
     (adminMode?'<span class="ghint">перетащите машины сюда</span>':'')+
+    (adminMode?'<button class="btn ghost slim" style="padding:3px 8px;font-size:10.5px" onclick="openClassesManager(\''+state.dep+'\')" title="Управлять классами">⚙️</button>':'')+
     '</div>';
    if(sub.length){
     h+='<div class="ggrid">';
@@ -1304,12 +1491,13 @@ vgrid.addEventListener('drop',function(e){
   var it=byId(id);
   if(!it){return}
   var g=sec.dataset.cls;
-  if(clsOf(it)!==g){
-   var oldName=clName(clsOf(it));
+  var oldG=clsOf(it);
+  if(oldG!==g){
+   var oldName=classNameOf(it.dep,oldG);
    it.cls=g;
    commit();
    render();
-   toast('«'+(it.name||'без названия')+'»: '+oldName+' → '+clName(g));
+   toast('«'+(it.name||'без названия')+'»: '+oldName+' → '+classNameOf(it.dep,g));
   }
   return;
  }
@@ -1406,12 +1594,21 @@ function setOrg(id,dk){
  var it=byId(id);
  if(!it){closeC();return}
  if(it.dep===dk){closeC();return}
- var old=dep(it.dep);
+ var oldName=dep(it.dep).s;
  it.dep=dk;
+ /* если у нового раздела есть классы и текущий ключ не подходит — ставим первый */
+ var classes=classesOfDep(dk);
+ if(classes.length){
+  var found=false;
+  for(var i=0;i<classes.length;i++){ if(classes[i].k===it.cls){found=true;break} }
+  if(!found){ it.cls=classes[0].k }
+ }else{
+  it.cls='';
+ }
  closeC();
  commit();
  render();
- toast('«'+(it.name||'без названия')+'»: '+old.s+' → '+dep(dk).s);
+ toast('«'+(it.name||'без названия')+'»: '+oldName+' → '+dep(dk).s);
 }
 
 /* ===================== СМЕНА КЛАССА ===================== */
@@ -1419,18 +1616,24 @@ function askClass(id){
  if(!adminMode){return}
  var it=byId(id);
  if(!it){return}
+ var classes=classesOfDep(it.dep);
+ if(!classes.length){
+  toast('В разделе «'+dep(it.dep).n+'» нет классов — добавьте их через ⚙️ Разделы',true);
+  return;
+ }
  var cur=clsOf(it);
  var h='';
- for(var i=0;i<CLASSES.length;i++){
-  h+='<button class="clsbtn'+(CLASSES[i].k===cur?' on':'')+'" style="--cc:'+CLASSES[i].c+';--ccb:'+hex2rgba(CLASSES[i].c,.14)+'" data-setcls="'+id+'" data-val="'+CLASSES[i].k+'">'+
-   '<span class="dot" style="background:'+CLASSES[i].c+'"></span>'+CLASSES[i].n+
-   (CLASSES[i].k===cur?'<b class="cn" style="margin-left:auto">текущий</b>':'')+
+ for(var i=0;i<classes.length;i++){
+  h+='<button class="clsbtn'+(classes[i].k===cur?' on':'')+'" style="--cc:'+classes[i].c+';--ccb:'+hex2rgba(classes[i].c,.14)+'" data-setcls="'+id+'" data-val="'+classes[i].k+'">'+
+   '<span class="dot" style="background:'+classes[i].c+'"></span>'+esc(classes[i].n)+
+   (classes[i].k===cur?'<b class="cn" style="margin-left:auto">текущий</b>':'')+
    '</button>';
  }
  $('#croot').innerHTML=
  '<div class="back" onclick="if(event.target===this)closeC()"><div class="modal smw">'+
   '<div class="m-head"><div class="mh-nm" style="font-size:16px">Класс машины</div>'+
-  '<div class="mh-sub">«'+esc(it.name||'Без названия')+'» — выберите группу:</div></div>'+
+  '<div class="mh-sub">Раздел «'+esc(dep(it.dep).n)+'» · «'+esc(it.name||'Без названия')+'» — выберите класс:</div>'+
+  '<button class="m-close" onclick="closeC()">✕</button></div>'+
   '<div class="m-body"><div class="clsgrid">'+h+'</div></div>'+
   '<div class="m-foot"><button class="btn ghost" onclick="closeC()">Отмена</button></div>'+
  '</div></div>';
@@ -1438,14 +1641,15 @@ function askClass(id){
 function setCls(id,cls){
  var it=byId(id);
  if(!it){closeC();return}
+ var oldName=classNameOf(it.dep,clsOf(it));
  it.cls=cls;
  closeC();
  commit();
  render();
- toast('«'+(it.name||'без названия')+'» → '+clName(cls));
+ toast('«'+(it.name||'без названия')+'»: '+oldName+' → '+classNameOf(it.dep,cls));
 }
 
-/* обработчик для динамических кнопок в модалках */
+/* обработчик динамических кнопок в модалках */
 document.addEventListener('click',function(e){
  var t=e.target;
  if(!t||!t.closest){return}
@@ -1453,6 +1657,10 @@ document.addEventListener('click',function(e){
  if(el){setOrg(el.getAttribute('data-setorg'),el.getAttribute('data-val'));return}
  el=t.closest('[data-setcls]');
  if(el){setCls(el.getAttribute('data-setcls'),el.getAttribute('data-val'));return}
+ el=t.closest('[data-depcls]');
+ if(el){openClassesManager(el.getAttribute('data-depcls'));return}
+ el=t.closest('[data-classdel]');
+ if(el){deleteClass(currentClassDepK,el.getAttribute('data-classdel'));return}
  el=t.closest('[data-depdel]');
  if(el){deleteDep(el.getAttribute('data-depdel'));return}
  el=t.closest('[data-del]');
@@ -1506,12 +1714,24 @@ function fillMDeps(cat,sel){
    if(DEPS[j].k===sel&&DEPS[j].cat===cat){el.value=sel;break}
   }
  }
+ refreshAddClasses();
+}
+function refreshAddClasses(){
+ var fDep=$('#fDep'),fCls=$('#fCls');
+ if(!fCls){return}
+ var depKey=fDep?fDep.value:'';
+ var classes=classesOfDep(depKey);
+ var o='';
+ if(!classes.length){ o='<option value="">— нет классов —</option>' }
+ else{ for(var i=0;i<classes.length;i++){ o+='<option value="'+esc(classes[i].k)+'">'+esc(classes[i].n)+'</option>' } }
+ fCls.innerHTML=o;
 }
 function updClsRow(){
  var row=$('#clsRow');
  if(!row){return}
- var show=(state.kind==='cars'&&$('#fCat')&&$('#fCat').value==='main');
+ var show=(state.kind==='cars');
  row.style.display=show?'':'none';
+ if(show){refreshAddClasses()}
 }
 function openAdd(){
  if(!adminMode){return}
@@ -1522,10 +1742,6 @@ function openAdd(){
  for(var i=0;i<a.length;i++){
   catOpts+='<option value="'+a[i].k+'"'+(a[i].k===state.cat?' selected':'')+'>'+esc(a[i].n)+'</option>';
  }
- var clsOpts='';
- for(var c2=0;c2<CLASSES.length;c2++){
-  clsOpts+='<option value="'+CLASSES[c2].k+'"'+(CLASSES[c2].k==='standard'?' selected':'')+'">'+CLASSES[c2].n+'</option>';
- }
  $('#mroot').innerHTML=
  '<div class="back" onclick="if(event.target===this)closeM()"><div class="modal" style="max-width:580px">'+
   '<div class="m-head"><div class="mh-nm" style="font-size:17px">'+(isCars?'Новая машина':'Новая форма')+'</div>'+
@@ -1535,8 +1751,8 @@ function openAdd(){
   '<div class="aph" id="aph"><div class="aph-in" id="aphIn"><span class="aph-ic">🖼️</span><b>Загрузить фото</b><span>клик или перетащите файл сюда</span></div></div>'+
   '<div class="formgrid" style="margin-top:16px">'+
   '<div><label class="flab">Категория</label><select class="sel" id="fCat" style="width:100%" onchange="fillMDeps(this.value);updClsRow()">'+catOpts+'</select></div>'+
-  '<div><label class="flab">Раздел</label><select class="sel" id="fDep" style="width:100%"></select></div>'+
-  (isCars?'<div id="clsRow"><label class="flab">Класс</label><select class="sel" id="fCls" style="width:100%">'+clsOpts+'</select></div>':'')+
+  '<div><label class="flab">Раздел</label><select class="sel" id="fDep" style="width:100%" onchange="refreshAddClasses()"></select></div>'+
+  (isCars?'<div id="clsRow"><label class="flab">Класс</label><select class="sel" id="fCls" style="width:100%"></select></div>':'')+
   (isCars?'<div><label class="flab">Макс. скорость, км/ч</label><input class="inp" id="fSp" style="width:100%" placeholder="напр. 180"></div>':'')+
   '<div class="full"><label class="flab">Название</label><input class="inp" id="fName" style="width:100%" placeholder="'+(isCars?'напр. Lada Vesta · ДПС':'напр. Летняя форма')+'"></div>'+
   '<div class="full"><label class="flab">Описание</label><textarea class="inp" id="fDesc" rows="3" style="width:100%" placeholder="'+(isCars?'Подразделение, назначение, комплектация…':'Комплектация, сезон, особенности…')+'"></textarea></div>'+
@@ -1569,19 +1785,21 @@ function submitAdd(){
   return;
  }
  var fCat=$('#fCat'),fDep=$('#fDep'),fCls=$('#fCls'),fDesc=$('#fDesc'),fSp=$('#fSp');
- var isMain=state.kind==='cars'&&fCat&&fCat.value==='main';
  var depVal=fDep?fDep.value:'';
  if(!depVal){
   var firstDep=null;
   for(var i=0;i<DEPS.length;i++){ if(DEPS[i].cat===(fCat?fCat.value:'main')){firstDep=DEPS[i];break} }
   if(firstDep){depVal=firstDep.k}
  }
+ var clsVal=fCls?fCls.value:'';
+ /* если в разделе нет классов — cls пустой */
+ if(!classesOfDep(depVal).length){ clsVal='' }
  ITEMS.unshift({
   id:'n'+Date.now()+Math.floor(Math.random()*999),
   kind:state.kind,
   cat:fCat?fCat.value:'main',
   dep:depVal,
-  cls:(isMain&&fCls)?fCls.value:'',
+  cls:clsVal,
   name:name,
   desc:fDesc?fDesc.value.trim():'',
   speed:state.kind==='cars'&&fSp?fSp.value.trim():'',
@@ -1602,7 +1820,11 @@ function askDel(id){
  var it=byId(id);
  if(!it){return}
  var d=dep(it.dep);
- var info='<i class="lbdot" style="background:'+d.c+'"></i>'+esc(d.n)+(it.kind==='cars'&&it.speed?' · '+esc(it.speed)+' км/ч':'')+(clsOf(it)?'<br>Класс: '+clName(clsOf(it)):'');
+ var clsLine='';
+ if(classesOfDep(it.dep).length){
+  clsLine='<br>Класс: '+esc(classNameOf(it.dep,clsOf(it)));
+ }
+ var info='<i class="lbdot" style="background:'+d.c+'"></i>'+esc(d.n)+(it.kind==='cars'&&it.speed?' · '+esc(it.speed)+' км/ч':'')+clsLine;
  $('#croot').innerHTML=
  '<div class="back" onclick="if(event.target===this)closeC()"><div class="modal smw">'+
   '<div class="m-head"><div class="mh-nm" style="font-size:16px">Удалить карточку?</div>'+
@@ -1631,7 +1853,8 @@ document.addEventListener('keydown',function(e){
  }
  if(e.key==='Enter'&&e.target){
   if(e.target.id==='newDepName'){e.preventDefault();addDepFromModal();return}
-  if(e.target.classList&&e.target.classList.contains('dep-name')){e.preventDefault();e.target.blur();return}
+  if(e.target.id==='newClassName'){e.preventDefault();addClassFromModal();return}
+  if(e.target.classList&&(e.target.classList.contains('dep-name')||e.target.classList.contains('class-name'))){e.preventDefault();e.target.blur();return}
  }
 });
 
