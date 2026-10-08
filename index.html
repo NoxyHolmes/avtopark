@@ -286,19 +286,6 @@ h1{font-size:20px}
 </head>
 <body>
 <div id="errbox"></div>
-
-<!-- ==============================================================
-     МЕСТО ДЛЯ ВСТРАИВАНИЯ functional.html (опционально).
-
-     Если хотите ОДИН файл без второго — вставьте весь HTML из
-     functional.html внутрь этого <script> и замените все
-     </script> на <\/script> (с обратным слэшем).
-
-     Если НЕ хотите — оставьте как есть и просто положите файл
-     functional.html рядом с index.html. Оба варианта работают.
-     ============================================================== -->
-<script type="text/plain" id="funcSrc"></script>
-
 <script>
 window.addEventListener('error',function(ev){
  if(!(ev instanceof ErrorEvent)||!ev.message){return}
@@ -416,14 +403,7 @@ function b64e(s){return btoa(unescape(encodeURIComponent(s)))}
 function b64d(s){return decodeURIComponent(escape(atob(s)))}
 function today(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function fmtDate(s){if(!s)return '';var p=s.split('-');if(p.length<3)return s;return p[2]+'.'+p[1]+'.'+p[0]}
-function toast(msg,warn){
- var t=document.createElement('div');
- t.className='toast'+(warn?' warn':'');
- t.textContent=msg;
- $('#troot').appendChild(t);
- setTimeout(function(){t.classList.add('out')},3200);
- setTimeout(function(){t.remove()},3700);
-}
+function toast(msg,warn){var t=document.createElement('div');t.className='toast'+(warn?' warn':'');t.textContent=msg;$('#troot').appendChild(t);setTimeout(function(){t.classList.add('out')},3200);setTimeout(function(){t.remove()},3700)}
 function fetchT(url,opts,ms){
  var ctl=null,to=null;
  try{if(typeof AbortController!=='undefined'){ctl=new AbortController()}}catch(e){ctl=null}
@@ -491,7 +471,6 @@ var LOCAL_K='idea_local_v1',CACHE_K='idea_cache_v1',KEY_K='idea_admin_key',PENDI
 var ITEMS=[],localRev=0,pendingRev=null,needSeed=false;
 var booted=false;
 var state={cat:'general',q:''};
-
 var SECTIONS=[
  {k:'cars',    n:'Автопарк',                  ic:'🚔', desc:'Автопарк и форма фракций.', garage:true},
  {k:'general', n:'Общие предложения',         ic:'💡', desc:'Общие идеи и предложения. Здесь же — приложение «Функционал фракции».'},
@@ -517,11 +496,7 @@ function findSection(k){
  }
  return null;
 }
-function sectionLeaf(k){
- var f=findSection(k);
- if(!f)return null;
- return f.sub?f.sub:f.sec;
-}
+function sectionLeaf(k){var f=findSection(k);if(!f)return null;return f.sub?f.sub:f.sec}
 var FUNC_CARD={
  title:'Функционал фракции',
  subtitle:'Единое приложение организации · МВД · кликабельно',
@@ -545,16 +520,10 @@ function toArr(x){
  for(var i=0;i<ks.length;i++)arr[+ks[i]]=x[ks[i]];
  return arr;
 }
-function loadLocalItems(){
- try{var d=JSON.parse(LS.get(LOCAL_K)||'null');if(d&&d.items){var a=toArr(d.items);if(a)return a}}catch(e){}
- return seedItems();
-}
+function loadLocalItems(){try{var d=JSON.parse(LS.get(LOCAL_K)||'null');if(d&&d.items){var a=toArr(d.items);if(a)return a}}catch(e){}return seedItems()}
 function saveLocalItems(items){try{LS.set(LOCAL_K,JSON.stringify({items:items}))}catch(e){toast('Хранилище переполнено',true)}}
 function cacheItems(){try{LS.set(CACHE_K,JSON.stringify({rev:localRev,items:ITEMS}))}catch(e){}}
-function loadCache(){
- try{var c=JSON.parse(LS.get(CACHE_K)||'null');if(c){var a=toArr(c.items);if(a&&a.length)return {rev:(typeof c.rev==='number'?c.rev:0),items:a}}}catch(e){}
- return null;
-}
+function loadCache(){try{var c=JSON.parse(LS.get(CACHE_K)||'null');if(c){var a=toArr(c.items);if(a&&a.length)return {rev:(typeof c.rev==='number'?c.rev:0),items:a}}}catch(e){}return null}
 function byId(id){for(var i=0;i<ITEMS.length;i++)if(ITEMS[i].id===id)return ITEMS[i];return null}
 function itemsByCat(k){var out=[];for(var i=0;i<ITEMS.length;i++)if(ITEMS[i].cat===k)out.push(ITEMS[i]);return out}
 function countBySection(s){
@@ -614,9 +583,7 @@ function doPush(){
   if(code===401){setSync('err','Токен недействителен');toast('Токен недействителен — войдите заново',true);return}
   if(code===422&&pushRetries<4){pushRetries++;lastCommitSha=null;lastTreeSha=null;pushTimer=setTimeout(doPush,320);return}
   setSync('err','Не сохранено');
-  var msg=(code===403)?'GitHub отклонил запись (403)'
-   :(code===404)?'Не найдена ветка/репозиторий (404)'
-   :'Не удалось сохранить ('+code+') — повторю автоматически';
+  var msg=(code===403)?'GitHub отклонил запись (403)':(code===404)?'Не найдена ветка/репозиторий (404)':'Не удалось сохранить ('+code+')';
   if(!pushToastShown){pushToastShown=true;toast(msg,true)}
   pushRetries++;
   pushTimer=setTimeout(doPush,7000);
@@ -668,10 +635,7 @@ function rawTick(){
   });
  }).catch(function(e){if(e&&e.nf){setSync('ok','GitHub');return}setSync('err','Нет связи')}).then(done,done);
 }
-function startPoll(){
- setInterval(rawTick,2500);
- document.addEventListener('visibilitychange',function(){if(!document.hidden)rawTick()});
-}
+function startPoll(){setInterval(rawTick,2500);document.addEventListener('visibilitychange',function(){if(!document.hidden)rawTick()})}
 function initRemote(){
  var cache=loadCache();
  if(cache&&cache.items&&cache.items.length){
@@ -688,10 +652,7 @@ function initRemote(){
    else if(!ITEMS.length){ITEMS=seedItems();needSeed=true}
    finishBoot('ok','GitHub');
   });
- }).catch(function(){
-  if(!ITEMS.length)ITEMS=loadLocalItems();
-  finishBoot('err','Нет связи');
- });
+ }).catch(function(){if(!ITEMS.length)ITEMS=loadLocalItems();finishBoot('err','Нет связи')});
 }
 function finishBoot(cls,txt){
  booted=true;setSync(cls,txt);render();startPoll();
@@ -714,9 +675,7 @@ function renderTop(){
  var z=$('#adminZone');if(!z)return;
  if(state.cat==='cars'){
   z.innerHTML=adminMode
-   ? '<button class="btn ghost slim" onclick="gOpenDepsManager()">⚙️ Разделы</button>'+
-     '<span class="adbadge">✏️ Редактор</span>'+
-     '<button class="btn ghost slim" onclick="logout()">Выйти</button>'
+   ? '<button class="btn ghost slim" onclick="gOpenDepsManager()">⚙️ Разделы</button><span class="adbadge">✏️ Редактор</span><button class="btn ghost slim" onclick="logout()">Выйти</button>'
    : '<button class="btn ghost slim" onclick="askAdmin()">🔒 Вход</button>';
  }else{
   z.innerHTML=adminMode
@@ -734,8 +693,7 @@ function askAdmin(){
   '<div class="m-body"><label class="flab">Токен доступа</label>'+
   '<input class="inp" id="fKey" type="password" placeholder="ghp_..." autocomplete="off" style="width:100%">'+
   '<div class="hint">GitHub → аватар → <b>Settings</b> → <b>Developer settings</b> → <b>Personal access tokens</b> → <b>Tokens (classic)</b> → <b>Generate new token</b> → галочка <b>repo</b>.</div></div>'+
-  '<div class="m-foot"><button class="btn ghost" onclick="closeM()">Отмена</button>'+
-  '<button class="btn" onclick="tryLogin()">Войти</button></div>'+
+  '<div class="m-foot"><button class="btn ghost" onclick="closeM()">Отмена</button><button class="btn" onclick="tryLogin()">Войти</button></div>'+
  '</div></div>';
  setTimeout(function(){var k=$('#fKey');if(k)k.focus()},60);
 }
@@ -758,8 +716,7 @@ function tryLogin(){
 }
 function logout(){
  ADMIN_KEY='';adminMode=false;LS.remove(KEY_K);
- clearTimeout(pushTimer);pushTimer=null;
- clearTimeout(gPushTimer);gPushTimer=null;
+ clearTimeout(pushTimer);pushTimer=null;clearTimeout(gPushTimer);gPushTimer=null;
  dataDirty=false;pushInFlight=false;pendingRev=null;
  gDataDirty=false;gPushInFlight=false;gPendingRev=null;
  render();toast('Вы вышли из режима редактирования');
@@ -780,16 +737,12 @@ function renderNav(){
   var cnt=countBySection(s);
   var on=(state.cat===s.k)||(s.subs&&s.subs.some(function(x){return x.k===state.cat}));
   h+='<div class="sb-group">';
-  h+='<div class="sb-item'+(on?' on':'')+'" onclick="setCat(\''+s.k+'\')">'+
-     '<span class="sb-ic">'+s.ic+'</span><span class="sb-n">'+esc(s.n)+'</span>'+
-     (cnt?'<span class="sb-c">'+cnt+'</span>':'')+'</div>';
+  h+='<div class="sb-item'+(on?' on':'')+'" onclick="setCat(\''+s.k+'\')"><span class="sb-ic">'+s.ic+'</span><span class="sb-n">'+esc(s.n)+'</span>'+(cnt?'<span class="sb-c">'+cnt+'</span>':'')+'</div>';
   if(s.subs&&!s.garage){
    h+='<div class="sb-sub">';
    for(var j=0;j<s.subs.length;j++){
     var sub=s.subs[j];var sc=itemsByCat(sub.k).length;
-    h+='<div class="sb-subitem'+(state.cat===sub.k?' on':'')+'" onclick="setCat(\''+sub.k+'\')">'+
-       '<span>'+(sub.ic||'•')+'</span><span>'+esc(sub.n)+'</span>'+
-       (sc?'<span class="sb-c">'+sc+'</span>':'')+'</div>';
+    h+='<div class="sb-subitem'+(state.cat===sub.k?' on':'')+'" onclick="setCat(\''+sub.k+'\')"><span>'+(sub.ic||'•')+'</span><span>'+esc(sub.n)+'</span>'+(sc?'<span class="sb-c">'+sc+'</span>':'')+'</div>';
    }
    h+='</div>';
   }
@@ -819,13 +772,7 @@ function bodyToHtml(text){
 }
 function funcCardHtml(){
  return '<div class="func-card" onclick="openFunc()">'+
-  '<div class="func-card-head">'+
-   '<div class="func-card-ic">📱</div>'+
-   '<div>'+
-    '<div class="func-card-title">'+esc(FUNC_CARD.title)+'</div>'+
-    '<div class="func-card-sub">'+esc(FUNC_CARD.subtitle)+'</div>'+
-   '</div>'+
-  '</div>'+
+  '<div class="func-card-head"><div class="func-card-ic">📱</div><div><div class="func-card-title">'+esc(FUNC_CARD.title)+'</div><div class="func-card-sub">'+esc(FUNC_CARD.subtitle)+'</div></div></div>'+
   '<div class="func-card-body">'+bodyToHtml(FUNC_CARD.body)+'</div>'+
   '<div class="func-card-cta">📱 Открыть приложение <span style="opacity:.8">→</span></div>'+
  '</div>';
@@ -854,10 +801,7 @@ function renderItems(){
    if(it.date)h+='<span>📅 '+fmtDate(it.date)+'</span>';
    h+='</div>';
    if(adminMode){
-    h+='<div class="sug-tools">'+
-       '<button class="stool" title="Изменить статус" data-status="'+esc(it.id)+'">🏷</button>'+
-       '<button class="stool" title="Редактировать" data-edit="'+esc(it.id)+'">✏️</button>'+
-       '<button class="stool stool-del" title="Удалить" data-del="'+esc(it.id)+'">✕</button></div>';
+    h+='<div class="sug-tools"><button class="stool" title="Изменить статус" data-status="'+esc(it.id)+'">🏷</button><button class="stool" title="Редактировать" data-edit="'+esc(it.id)+'">✏️</button><button class="stool stool-del" title="Удалить" data-del="'+esc(it.id)+'">✕</button></div>';
    }
    h+='</div>';
   }
@@ -869,7 +813,6 @@ function render(){
  renderTop();renderNav();
  var isFunc = (state.cat==='func');
  var isCars = (state.cat==='cars');
-
  if(isFunc){
   $('#sugView').style.display='none';
   $('#garageView').style.display='none';
@@ -881,7 +824,6 @@ function render(){
  } else {
   $('#funcView').classList.remove('on');
  }
-
  if(isCars){
   $('#sugView').style.display='none';
   $('#garageView').style.display='';
@@ -891,7 +833,6 @@ function render(){
   gRender();
   return;
  }
-
  $('#sugView').style.display='';
  $('#garageView').style.display='none';
  $('#logoIc').textContent='💡';
@@ -905,23 +846,13 @@ function render(){
  $('#addBtn').style.display=adminMode?'':'none';
  renderItems();
 }
-
 /* ============================================================
-   ФУНКЦИОНАЛ ФРАКЦИИ (встроенный, работает в двух режимах)
+   ФУНКЦИОНАЛ ФРАКЦИИ — загрузка из ./functional.html
    ============================================================ */
 var FUNC_HTML_CACHE = null;
 var FUNC_HTML_BUSY  = false;
 var FUNC_BLOB_URL   = null;
-
-function getInlineFuncHtml(){
- var el = document.getElementById('funcSrc');
- if(!el) return null;
- var t = el.textContent || el.innerHTML || '';
- if(!t) return null;
- t = t.trim();
- if(!t) return null;
- return t;
-}
+var FUNC_ERR        = null;
 
 function makeBlobUrl(html){
  try{
@@ -929,17 +860,8 @@ function makeBlobUrl(html){
   return URL.createObjectURL(blob);
  }catch(e){ return null; }
 }
-
 function preloadFunc(){
  if(FUNC_HTML_CACHE || FUNC_HTML_BUSY) return;
- /* 1) Сначала пробуем встроенный template */
- var inline = getInlineFuncHtml();
- if(inline){
-  FUNC_HTML_CACHE = inline;
-  FUNC_BLOB_URL = makeBlobUrl(inline);
-  return;
- }
- /* 2) Если не встроено — грузим ./functional.html */
  FUNC_HTML_BUSY = true;
  fetch('./functional.html?v=' + Date.now(), { cache:'no-store' })
   .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
@@ -950,10 +872,9 @@ function preloadFunc(){
   })
   .catch(function(e){
    FUNC_HTML_BUSY = false;
-   console.warn('Не удалось предзагрузить functional.html:', e);
+   FUNC_ERR = e;
   });
 }
-
 function ensureFuncLoaded(){
  var fr = document.getElementById('funcFrame');
  if(!fr) return;
@@ -961,10 +882,8 @@ function ensureFuncLoaded(){
   if(fr.getAttribute('src') !== FUNC_BLOB_URL) fr.setAttribute('src', FUNC_BLOB_URL);
   return;
  }
- var inline = getInlineFuncHtml();
- if(inline){
-  FUNC_HTML_CACHE = inline;
-  FUNC_BLOB_URL = makeBlobUrl(inline);
+ if(FUNC_HTML_CACHE){
+  FUNC_BLOB_URL = makeBlobUrl(FUNC_HTML_CACHE);
   if(FUNC_BLOB_URL){ fr.setAttribute('src', FUNC_BLOB_URL); return; }
  }
  fr.setAttribute('srcdoc',
@@ -978,17 +897,18 @@ function ensureFuncLoaded(){
    else { fr.setAttribute('srcdoc', txt); }
   })
   .catch(function(e){
+   FUNC_ERR = e;
    fr.setAttribute('srcdoc',
     '<div style="font:14px system-ui;color:#ff8a8a;padding:24px;line-height:1.7;background:#0c0f15;height:100%;box-sizing:border-box">' +
-    '<b>Не удалось загрузить функционал</b><br><br>' +
-    'Есть два способа исправить:<br>' +
-    '1. Положите <code>functional.html</code> рядом с <code>index.html</code>.<br>' +
-    '2. Или вставьте код из <code>functional.html</code> внутрь <code>&lt;script type="text/plain" id="funcSrc"&gt;</code> в этом index.html (заменив все <code>&lt;/script&gt;</code> на <code>&lt;\\/script&gt;</code>).<br><br>' +
+    '<b>Не удалось загрузить functional.html</b><br><br>' +
+    'Что нужно сделать:<br>' +
+    '1. Убедитесь, что файл <code>functional.html</code> лежит <b>рядом</b> с <code>index.html</code> в том же репозитории.<br>' +
+    '2. Открывайте страницу по <code>https://</code> (GitHub Pages), а не через <code>file://</code>.<br>' +
+    '3. Проверьте адрес напрямую: <code>https://ваш-ник.github.io/ваш-репо/functional.html</code><br><br>' +
     'Ответ сервера: ' + e.message +
     '</div>');
   });
 }
-
 function openFunc(){
  var fr = document.getElementById('funcFrame');
  if(fr) fr.removeAttribute('srcdoc');
@@ -1001,6 +921,7 @@ function funcReload(){
  FUNC_BLOB_URL  = null;
  FUNC_HTML_CACHE = null;
  FUNC_HTML_BUSY  = false;
+ FUNC_ERR        = null;
  if(fr) fr.removeAttribute('src');
  preloadFunc();
  setTimeout(function(){
@@ -1013,7 +934,7 @@ window.openFunc=openFunc;window.closeFunc=closeFunc;window.funcReload=funcReload
 document.addEventListener('DOMContentLoaded', function(){ setTimeout(preloadFunc, 60); });
 
 /* ============================================================
-   РАБОТА С ФОТО (загрузка в GitHub)
+   РАБОТА С ФОТО
    ============================================================ */
 function compressImg(img){
  var steps=[[1100,.82],[900,.74],[800,.64],[700,.52]];
@@ -1056,7 +977,6 @@ function uploadImageToGitHub(file,cb){
  };
  reader.readAsDataURL(file);
 }
-
 /* ============================================================
    РЕДАКТОР ПРЕДЛОЖЕНИЙ
    ============================================================ */
@@ -1090,8 +1010,7 @@ function openEditor(it){
   '<div class="mh-sub">Раздел: <b style="color:#c7b6ff">'+esc(leaf?leaf.n:'')+'</b></div>'+
   '<button class="m-close" onclick="closeM()">✕</button></div>'+
   '<div class="m-body">'+
-  '<label class="flab">Раздел</label>'+
-  '<select class="sel" id="fCat" style="width:100%">'+catOpts+'</select>'+
+  '<label class="flab">Раздел</label><select class="sel" id="fCat" style="width:100%">'+catOpts+'</select>'+
   '<label class="flab" style="margin-top:14px">Текст предложения</label>'+
   '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">'+
    '<button class="btn ghost slim" onclick="insertImageDialog(\'fText\')">🖼 Вставить фото</button>'+
@@ -1207,8 +1126,7 @@ function askDel(id){
  '<div class="back" onclick="if(event.target===this)closeC()"><div class="modal smw">'+
   '<div class="m-head"><div class="mh-nm" style="font-size:16px">Удалить предложение?</div>'+
   '<div class="mh-sub">Это действие нельзя отменить</div></div>'+
-  '<div class="m-foot"><button class="btn ghost" onclick="closeC()">Отмена</button>'+
-  '<button class="btn warn" onclick="delItem(\''+id+'\')">Удалить</button></div>'+
+  '<div class="m-foot"><button class="btn ghost" onclick="closeC()">Отмена</button><button class="btn warn" onclick="delItem(\''+id+'\')">Удалить</button></div>'+
  '</div></div>';
 }
 window.askDel=askDel;
@@ -1221,11 +1139,7 @@ document.addEventListener('click',function(e){
  el=t.closest('[data-status]');if(el){askStatus(el.getAttribute('data-status'));return}
  if(t.tagName==='IMG'&&t.getAttribute('data-img'))openLB(t.getAttribute('data-img'));
 });
-function openLB(url){
- var lb=$('#lb');var img=$('#lbImg');if(!lb||!img)return;
- img.setAttribute('src',url);lb.classList.add('show');
- requestAnimationFrame(function(){requestAnimationFrame(function(){lb.classList.add('zoom')})});
-}
+function openLB(url){var lb=$('#lb');var img=$('#lbImg');if(!lb||!img)return;img.setAttribute('src',url);lb.classList.add('show');requestAnimationFrame(function(){requestAnimationFrame(function(){lb.classList.add('zoom')})})}
 function closeLB(){var lb=$('#lb');if(!lb)return;lb.classList.remove('zoom');setTimeout(function(){lb.classList.remove('show');var i=$('#lbImg');if(i)i.removeAttribute('src')},240)}
 $('#lb').addEventListener('click',closeLB);
 document.addEventListener('keydown',function(e){
@@ -1235,7 +1149,6 @@ document.addEventListener('keydown',function(e){
  }
  if(e.key==='Enter'&&e.ctrlKey&&$('#fText'))submitSug();
 });
-
 /* ============================================================
    АВТОПАРК
    ============================================================ */
@@ -1247,13 +1160,7 @@ function gDefaultClasses(){return [
  {k:'special', n:'Спецтранспорт', c:'#ff9a3d'}
 ];}
 function gDefaultClassesFor(cat){if(cat==='event')return [];return gDefaultClasses()}
-function gCloneClasses(src){
- var out=[];if(!src||!src.length)return out;
- for(var i=0;i<src.length;i++){var c=src[i];if(!c||!c.k)continue;
-  out.push({k:String(c.k),n:String(c.n||c.s||'—'),c:String(c.c||'#4da3ff')});
- }
- return out;
-}
+function gCloneClasses(src){var out=[];if(!src||!src.length)return out;for(var i=0;i<src.length;i++){var c=src[i];if(!c||!c.k)continue;out.push({k:String(c.k),n:String(c.n||c.s||'—'),c:String(c.c||'#4da3ff')})}return out}
 var G_DEFAULT_DEPS=[
  {k:'uvd',  s:'УМВД',        n:'УМВД',                 c:'#4da3ff', cat:'main'},
  {k:'gibdd',s:'ОГИБДД',      n:'ОГИБДД',               c:'#56ccff', cat:'main'},
@@ -1289,39 +1196,39 @@ var G_CATS={
 };
 function gCatName(kind,cat){var a=G_CATS[kind];for(var i=0;i<a.length;i++)if(a[i].k===cat)return a[i].n;return a[0].n}
 function gSeedItems(){return [
- {id:'c1', kind:'cars',cat:'main', dep:'uvd',  cls:'standard',name:'Lada Vesta',                desc:'Патрульный автомобиль ППС', speed:'178', photo:''},
- {id:'c2', kind:'cars',cat:'main', dep:'uvd',  cls:'special', name:'УАЗ Патриот',               desc:'Автомобиль руководящего состава УМВД', speed:'140', photo:''},
- {id:'c3', kind:'cars',cat:'main', dep:'uvd',  cls:'special', name:'ГАЗель Next',               desc:'Спецтранспорт группы задержания', speed:'120', photo:''},
- {id:'c4', kind:'cars',cat:'main', dep:'gibdd',cls:'budget',  name:'Lada Priora',               desc:'Патрульный автомобиль ДПС', speed:'183', photo:''},
- {id:'c5', kind:'cars',cat:'main', dep:'gibdd',cls:'standard',name:'Kia Rio',                   desc:'Автомобиль ДПС', speed:'180', photo:''},
- {id:'c6', kind:'cars',cat:'main', dep:'gibdd',cls:'high',    name:'Skoda Octavia',             desc:'Оперативный автомобиль ДПС', speed:'190', photo:''},
- {id:'c7', kind:'cars',cat:'main', dep:'cgb',  cls:'special', name:'ГАЗель Next · Реанимобиль', desc:'Класс C · интенсивная терапия', speed:'120', photo:''},
- {id:'c8', kind:'cars',cat:'main', dep:'cgb',  cls:'special', name:'Ford Transit · Скорая',     desc:'Санитарный автомобиль ЦГБ', speed:'140', photo:''},
- {id:'c9', kind:'cars',cat:'main', dep:'vs',   cls:'special', name:'УАЗ Хантер',                desc:'Патрульный автомобиль комендатуры', speed:'120', photo:''},
- {id:'c10',kind:'cars',cat:'main', dep:'vs',   cls:'special', name:'КАМАЗ-43118',               desc:'Грузовой автомобиль обеспечения', speed:'90',  photo:''},
- {id:'c11',kind:'cars',cat:'main', dep:'rzd',  cls:'special', name:'УАЗ Патриот',               desc:'Машина охраны объектов РЖД', speed:'140', photo:''},
- {id:'c12',kind:'cars',cat:'main', dep:'rzd',  cls:'special', name:'Ford Transit',              desc:'Транспорт ведомственной службы', speed:'135', photo:''},
- {id:'c13',kind:'cars',cat:'event',dep:'fsb',  name:'Toyota Camry',              desc:'Служебный автомобиль ОГ', speed:'210', photo:''},
- {id:'c14',kind:'cars',cat:'event',dep:'fsb',  name:'Volkswagen Passat',         desc:'Немаркированный оперативный', speed:'205', photo:''},
- {id:'c15',kind:'cars',cat:'event',dep:'sk',   name:'Hyundai Solaris',           desc:'Автомобиль следственной группы', speed:'185', photo:''},
- {id:'c16',kind:'cars',cat:'event',dep:'prok', name:'Toyota Camry',              desc:'Служебный транспорт прокуратуры', speed:'210', photo:''},
- {id:'c17',kind:'cars',cat:'event',dep:'mchs', name:'УАЗ Патриот',               desc:'Автомобиль оперативной группы МЧС', speed:'140', photo:''},
- {id:'c18',kind:'cars',cat:'event',dep:'mchs', name:'КАМАЗ · ПА',                desc:'Пожарный автомобиль · цистерна 8 т', speed:'100', photo:''},
- {id:'c19',kind:'cars',cat:'event',dep:'fso',  name:'BMW 760Li',                 desc:'Автомобиль сопровождения ФСО', speed:'250', photo:''},
- {id:'c20',kind:'cars',cat:'event',dep:'fso',  name:'Aurus Senat',               desc:'Представительский автомобиль', speed:'250', photo:''},
- {id:'f1', kind:'form',cat:'main', dep:'uvd',  name:'Летняя повседневная форма', desc:'Светло-серая рубашка, тёмные брюки', photo:''},
- {id:'f2', kind:'form',cat:'main', dep:'uvd',  name:'Зимняя повседневная форма', desc:'Тёмно-серое пальто, кашне, фуражка', photo:''},
- {id:'f3', kind:'form',cat:'main', dep:'gibdd',name:'Форма инспектора ДПС',      desc:'Китель со светоотражающими полосами', photo:''},
- {id:'f4', kind:'form',cat:'main', dep:'cgb',  name:'Медицинская форма',         desc:'Белый халат или костюм, бейдж ЦГБ', photo:''},
- {id:'f5', kind:'form',cat:'main', dep:'cgb',  name:'Форма выездной бригады',    desc:'Комбинезон скорой помощи', photo:''},
- {id:'f6', kind:'form',cat:'main', dep:'vs',   name:'Полевая форма ВС РФ',       desc:'Камуфляж, берцы, разгрузка', photo:''},
- {id:'f7', kind:'form',cat:'main', dep:'vs',   name:'Парадная форма',            desc:'Китель, парадный ремень, фуражка', photo:''},
- {id:'f8', kind:'form',cat:'main', dep:'rzd',  name:'Форменная одежда РЖД',      desc:'Тёмно-синий китель, фуражка', photo:''},
- {id:'f9', kind:'form',cat:'event',dep:'fsb',  name:'Оперативная форма ФСБ',     desc:'Чёрный костюм, разгрузка, гарнитура', photo:''},
- {id:'f10',kind:'form',cat:'event',dep:'sk',   name:'Костюм следователя',        desc:'Тёмный деловой костюм, значок СК', photo:''},
- {id:'f11',kind:'form',cat:'event',dep:'prok', name:'Форма прокурора',           desc:'Синий китель с золотыми погонами', photo:''},
+ {id:'c1', kind:'cars',cat:'main', dep:'uvd',  cls:'standard',name:'Lada Vesta',desc:'Патрульный автомобиль ППС', speed:'178', photo:''},
+ {id:'c2', kind:'cars',cat:'main', dep:'uvd',  cls:'special', name:'УАЗ Патриот',desc:'Автомобиль руководящего состава УМВД', speed:'140', photo:''},
+ {id:'c3', kind:'cars',cat:'main', dep:'uvd',  cls:'special', name:'ГАЗель Next',desc:'Спецтранспорт группы задержания', speed:'120', photo:''},
+ {id:'c4', kind:'cars',cat:'main', dep:'gibdd',cls:'budget',  name:'Lada Priora',desc:'Патрульный автомобиль ДПС', speed:'183', photo:''},
+ {id:'c5', kind:'cars',cat:'main', dep:'gibdd',cls:'standard',name:'Kia Rio',desc:'Автомобиль ДПС', speed:'180', photo:''},
+ {id:'c6', kind:'cars',cat:'main', dep:'gibdd',cls:'high',    name:'Skoda Octavia',desc:'Оперативный автомобиль ДПС', speed:'190', photo:''},
+ {id:'c7', kind:'cars',cat:'main', dep:'cgb',  cls:'special', name:'ГАЗель Next · Реанимобиль',desc:'Класс C · интенсивная терапия', speed:'120', photo:''},
+ {id:'c8', kind:'cars',cat:'main', dep:'cgb',  cls:'special', name:'Ford Transit · Скорая',desc:'Санитарный автомобиль ЦГБ', speed:'140', photo:''},
+ {id:'c9', kind:'cars',cat:'main', dep:'vs',   cls:'special', name:'УАЗ Хантер',desc:'Патрульный автомобиль комендатуры', speed:'120', photo:''},
+ {id:'c10',kind:'cars',cat:'main', dep:'vs',   cls:'special', name:'КАМАЗ-43118',desc:'Грузовой автомобиль обеспечения', speed:'90',  photo:''},
+ {id:'c11',kind:'cars',cat:'main', dep:'rzd',  cls:'special', name:'УАЗ Патриот',desc:'Машина охраны объектов РЖД', speed:'140', photo:''},
+ {id:'c12',kind:'cars',cat:'main', dep:'rzd',  cls:'special', name:'Ford Transit',desc:'Транспорт ведомственной службы', speed:'135', photo:''},
+ {id:'c13',kind:'cars',cat:'event',dep:'fsb',  name:'Toyota Camry',desc:'Служебный автомобиль ОГ', speed:'210', photo:''},
+ {id:'c14',kind:'cars',cat:'event',dep:'fsb',  name:'Volkswagen Passat',desc:'Немаркированный оперативный', speed:'205', photo:''},
+ {id:'c15',kind:'cars',cat:'event',dep:'sk',   name:'Hyundai Solaris',desc:'Автомобиль следственной группы', speed:'185', photo:''},
+ {id:'c16',kind:'cars',cat:'event',dep:'prok', name:'Toyota Camry',desc:'Служебный транспорт прокуратуры', speed:'210', photo:''},
+ {id:'c17',kind:'cars',cat:'event',dep:'mchs', name:'УАЗ Патриот',desc:'Автомобиль оперативной группы МЧС', speed:'140', photo:''},
+ {id:'c18',kind:'cars',cat:'event',dep:'mchs', name:'КАМАЗ · ПА',desc:'Пожарный автомобиль · цистерна 8 т', speed:'100', photo:''},
+ {id:'c19',kind:'cars',cat:'event',dep:'fso',  name:'BMW 760Li',desc:'Автомобиль сопровождения ФСО', speed:'250', photo:''},
+ {id:'c20',kind:'cars',cat:'event',dep:'fso',  name:'Aurus Senat',desc:'Представительский автомобиль', speed:'250', photo:''},
+ {id:'f1', kind:'form',cat:'main', dep:'uvd',  name:'Летняя повседневная форма',desc:'Светло-серая рубашка, тёмные брюки', photo:''},
+ {id:'f2', kind:'form',cat:'main', dep:'uvd',  name:'Зимняя повседневная форма',desc:'Тёмно-серое пальто, кашне, фуражка', photo:''},
+ {id:'f3', kind:'form',cat:'main', dep:'gibdd',name:'Форма инспектора ДПС',desc:'Китель со светоотражающими полосами', photo:''},
+ {id:'f4', kind:'form',cat:'main', dep:'cgb',  name:'Медицинская форма',desc:'Белый халат или костюм, бейдж ЦГБ', photo:''},
+ {id:'f5', kind:'form',cat:'main', dep:'cgb',  name:'Форма выездной бригады',desc:'Комбинезон скорой помощи', photo:''},
+ {id:'f6', kind:'form',cat:'main', dep:'vs',   name:'Полевая форма ВС РФ',desc:'Камуфляж, берцы, разгрузка', photo:''},
+ {id:'f7', kind:'form',cat:'main', dep:'vs',   name:'Парадная форма',desc:'Китель, парадный ремень, фуражка', photo:''},
+ {id:'f8', kind:'form',cat:'main', dep:'rzd',  name:'Форменная одежда РЖД',desc:'Тёмно-синий китель, фуражка', photo:''},
+ {id:'f9', kind:'form',cat:'event',dep:'fsb',  name:'Оперативная форма ФСБ',desc:'Чёрный костюм, разгрузка, гарнитура', photo:''},
+ {id:'f10',kind:'form',cat:'event',dep:'sk',   name:'Костюм следователя',desc:'Тёмный деловой костюм, значок СК', photo:''},
+ {id:'f11',kind:'form',cat:'event',dep:'prok', name:'Форма прокурора',desc:'Синий китель с золотыми погонами', photo:''},
  {id:'f12',kind:'form',cat:'event',dep:'mchs', name:'Сертифицированная форма МЧС',desc:'Оранжевая куртка, СИЗ, каска', photo:''},
- {id:'f13',kind:'form',cat:'event',dep:'fso',  name:'Форма ФСО',                 desc:'Чёрный костюм, значок ФСО', photo:''}
+ {id:'f13',kind:'form',cat:'event',dep:'fso',  name:'Форма ФСО',desc:'Чёрный костюм, значок ФСО', photo:''}
 ];}
 function gLoadLocal(){
  var d=null;try{d=JSON.parse(LS.get(G_LOCAL_K)||'null')}catch(e){}
@@ -1343,18 +1250,8 @@ function gFindDep(k){for(var i=0;i<G_DEPS.length;i++)if(G_DEPS[i].k===k)return G
 function gDep(k){var d=gFindDep(k);return d||{k:k||'_',s:'—',n:'Раздел удалён',c:'#6b7280',cat:'main',classes:[]}}
 function gClassesOfDep(k){var d=gFindDep(k);if(!d||!d.classes)return [];return d.classes}
 function gClassNameOf(depKey,clsKey){var cs=gClassesOfDep(depKey);for(var i=0;i<cs.length;i++)if(cs[i].k===clsKey)return cs[i].n;return '—'}
-function gClsOf(it){
- if(!it)return null;
- var cs=gClassesOfDep(it.dep);if(!cs.length)return null;
- for(var i=0;i<cs.length;i++)if(cs[i].k===it.cls)return it.cls;
- return cs[0].k;
-}
-function gIsGrouped(){
- if(gState.kind!=='cars')return false;
- if(gState.dep==='all')return false;
- var d=gFindDep(gState.dep);
- return !!(d&&d.classes&&d.classes.length);
-}
+function gClsOf(it){if(!it)return null;var cs=gClassesOfDep(it.dep);if(!cs.length)return null;for(var i=0;i<cs.length;i++)if(cs[i].k===it.cls)return it.cls;return cs[0].k}
+function gIsGrouped(){if(gState.kind!=='cars')return false;if(gState.dep==='all')return false;var d=gFindDep(gState.dep);return !!(d&&d.classes&&d.classes.length)}
 function gBy(id){for(var i=0;i<GITEMS.length;i++)if(GITEMS[i].id===id)return GITEMS[i];return null}
 function gCountItems(kind,cat,dp){var n=0;for(var i=0;i<GITEMS.length;i++){var it=GITEMS[i];if(it.kind===kind&&it.cat===cat&&(dp===null||it.dep===dp))n++}return n}
 function gCountDepUsage(k){var n=0;for(var i=0;i<GITEMS.length;i++)if(GITEMS[i].dep===k)n++;return n}
@@ -1438,11 +1335,7 @@ function gPullData(rv){
   });
  });
 }
-function gApplyData(rev,items,deps){
- GITEMS=items;
- if(deps&&Array.isArray(deps)&&deps.length)G_DEPS=gCloneDeps(deps);
- gLocalRev=rev;gCacheItems();gRender();
-}
+function gApplyData(rev,items,deps){GITEMS=items;if(deps&&Array.isArray(deps)&&deps.length)G_DEPS=gCloneDeps(deps);gLocalRev=rev;gCacheItems();gRender()}
 var gRawTickBusy=false;
 function gRawTick(){
  if(gRawTickBusy||!REPO)return;
@@ -1488,14 +1381,11 @@ function gInitRemote(){
    }else if(!GITEMS.length){GITEMS=gSeedItems();gNeedSeed=true}
    gFinishBoot('ok','GitHub');
   });
- }).catch(function(){
-  if(!GITEMS.length)GITEMS=gLoadLocal();
-  gFinishBoot('err','Нет связи');
- });
+ }).catch(function(){if(!GITEMS.length)GITEMS=gLoadLocal();gFinishBoot('err','Нет связи')});
 }
 function gFinishBoot(cls,txt){
  gBooted=true;setSync(cls,txt);gRender();gStartPoll();
- if(ADMIN_KEY&&REPO&&adminMode&&(gNeedSeed||gDataDirty||LS.get(G_PENDING_KEY))){gDataDirty=true;gDoPush()}
+ if(ADMIN_KEY&&REPO&&adminMode&&(gNeedSeed||gDataDirty||LS.get(G_PENDING_K))){gDataDirty=true;gDoPush()}
 }
 function gRefade(){var c=$('#content');if(!c)return;c.style.animation='none';void c.offsetWidth;c.style.animation=''}
 function gSetKind(k){
@@ -1991,7 +1881,6 @@ document.addEventListener('keydown',function(e){
   if(e.target.id==='gNewClassName'){e.preventDefault();gAddClassFromModal();return}
  }
 });
-
 /* ===================== СТАРТ ===================== */
 if(REPO){initRemote()}else{ITEMS=loadLocalItems();booted=true;render();setSync('','Локально')}
 </script>
