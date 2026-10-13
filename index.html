@@ -121,9 +121,9 @@ textarea.inp{resize:vertical}
 @keyframes skmove{to{transform:translateX(100%)}}
 .skb{height:11px;border-radius:6px;background:#161c26;margin:10px 14px 0;position:relative;overflow:hidden}
 .skb:last-child{margin-bottom:14px}
-#lb{position:fixed;inset:0;z-index:600;background:rgba(4,7,11,0);backdrop-filter:blur(0);display:flex;align-items:center;justify-content:center;padding:26px;cursor:zoom-out;opacity:0;transition:opacity .22s,backdrop-filter .22s;pointer-events:none}
+#lb{position:fixed;inset:0;z-index:600;background:rgba(4,7,11,0);backdrop-filter:blur(0);display:flex;align-items:center;justify-content:center;padding:14px;cursor:zoom-out;opacity:0;transition:opacity .22s,backdrop-filter .22s;pointer-events:none}
 #lb.show{opacity:1;background:rgba(4,7,11,.88);backdrop-filter:blur(9px);pointer-events:auto}
-#lb img{max-width:min(1150px,92vw);max-height:86vh;border-radius:14px;border:1px solid #2e3846;box-shadow:0 30px 90px rgba(0,0,0,.7);transform:scale(.9);opacity:0;transition:transform .24s ease,opacity .24s ease;cursor:zoom-out}
+#lb img{max-width:min(1600px,96vw);max-height:91vh;border-radius:14px;border:1px solid #2e3846;box-shadow:0 30px 90px rgba(0,0,0,.7);transform:scale(.92);opacity:0;transition:transform .24s ease,opacity .24s ease;cursor:zoom-out}
 #lb.zoom img{transform:scale(1);opacity:1}
 .lb-cap{position:absolute;top:20px;left:24px;font-weight:800;font-size:14px;color:#e9edf4;background:rgba(14,17,22,.72);border:1px solid #2e3846;padding:9px 15px;border-radius:12px;backdrop-filter:blur(6px);max-width:70vw}
 .lb-cap span{display:block;font-weight:600;font-size:11px;color:var(--mut);margin-top:3px}
@@ -223,8 +223,8 @@ h1{font-size:20px}
 .deprow .dep-color{width:32px;height:32px;flex-basis:32px}
 .deprow .dep-del{width:32px;height:32px;flex-basis:32px}
 .deprow .dep-cls-btn{padding:6px 8px;font-size:10.5px}
-#lb{padding:12px}
-#lb img{max-width:96vw;max-height:78vh;border-radius:12px}
+#lb{padding:6px}
+#lb img{max-width:calc(100vw - 12px);max-height:88vh;border-radius:10px}
 .lb-cap{top:12px;left:12px;right:12px;max-width:none;font-size:12px;padding:8px 12px;border-radius:10px}
 #troot{right:10px;left:10px;bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 .toast{max-width:none}
@@ -855,6 +855,7 @@ function apiTick(force){
  }).then(done,done);
 }
 function startPoll(){
+ if(!REPO){return}
  setInterval(rawTick,2000);
  setInterval(function(){apiTick(false)},10000);
  document.addEventListener('visibilitychange',function(){
@@ -1025,848 +1026,658 @@ function openDepsManager(){
  if(!adminMode){return}
  renderDepsModal();
 }
+
 function renderDepsModal(){
- var mainRows='',eventRows='';
- for(var i=0;i<DEPS.length;i++){
-  var row=depRowHtml(DEPS[i]);
-  if(DEPS[i].cat==='event'){eventRows+=row}else{mainRows+=row}
- }
- var h=
-  '<div class="deplist-head">Основной список</div>'+
-  '<div>'+(mainRows||'<div style="color:#5b6675;font-size:12px;padding:6px 0">Пока нет разделов</div>')+'</div>'+
-  '<div class="deplist-head">Для мероприятий</div>'+
-  '<div>'+(eventRows||'<div style="color:#5b6675;font-size:12px;padding:6px 0">Пока нет разделов</div>')+'</div>'+
-  '<div class="newdep">'+
-   '<input class="inp" id="newDepName" type="text" maxlength="40" placeholder="Название нового раздела" autocomplete="off">'+
-   '<select class="sel" id="newDepCat">'+
-    '<option value="main">Основной</option>'+
-    '<option value="event">Мероприятия</option>'+
-   '</select>'+
-   '<button class="btn" onclick="addDepFromModal()">＋ Добавить</button>'+
-  '</div>';
- $('#croot').innerHTML=
- '<div class="back" onclick="if(event.target===this)closeC()"><div class="modal" style="max-width:560px">'+
-  '<div class="m-head"><div class="mh-nm" style="font-size:17px">⚙️ Разделы (ведомства)</div>'+
-  '<div class="mh-sub">Переименование применяется сразу ко всем карточкам. Кнопка 📋 открывает <b>классы</b> (подразделы) внутри раздела. Удалять можно только пустые разделы.</div>'+
+ var root=$('#croot');
+ if(!root){return}
+ var h='<div class="back" onclick="if(event.target===this)closeC()"><div class="modal">'+
+  '<div class="m-head"><div class="mh-nm">⚙️ Разделы и классы</div>'+
+  '<div class="mh-sub">Названия разделов можно менять прямо в списке. Классы настраиваются отдельно для каждого раздела.</div>'+
   '<button class="m-close" onclick="closeC()">✕</button></div>'+
-  '<div class="m-body">'+h+'</div>'+
-  '<div class="m-foot"><button class="btn ghost" onclick="closeC()">Готово</button></div>'+
- '</div></div>';
- setTimeout(function(){ var n=$('#newDepName'); if(n){n.focus()} },60);
-}
-function depRowHtml(d){
- var clsCount=(d.classes&&d.classes.length)?d.classes.length:0;
- return '<div class="deprow" data-depk="'+esc(d.k)+'">'+
-  '<span class="ddot" style="background:'+d.c+'"></span>'+
-  '<input class="inp dep-name" type="text" maxlength="40" data-depk="'+esc(d.k)+'" value="'+esc(d.n)+'" placeholder="Название" autocomplete="off">'+
-  '<input class="dep-color" type="color" data-depk="'+esc(d.k)+'" value="'+d.c+'" title="Цвет">'+
-  '<button class="btn ghost slim dep-cls-btn" data-depcls="'+esc(d.k)+'" title="Классы (подразделы)">📋 '+clsCount+'</button>'+
-  '<button class="btn warn slim dep-del" data-depdel="'+esc(d.k)+'" title="Удалить раздел">✕</button>'+
-  '</div>';
-}
-function addDepFromModal(){
- if(!adminMode){return}
- var nEl=$('#newDepName'),cEl=$('#newDepCat');
- var name=nEl?nEl.value.trim():'';
- if(!name){toast('Введите название раздела',true);if(nEl){nEl.focus()}return}
- var cat=cEl?cEl.value:'main';
- if(cat!=='event'){cat='main'}
- var lower=name.toLowerCase();
- for(var i=0;i<DEPS.length;i++){
-  if(DEPS[i].n.toLowerCase()===lower&&DEPS[i].cat===cat){
-   toast('Такой раздел уже есть в этой категории',true);return;
+  '<div class="m-body">';
+ var groups=[['main','Основные разделы'],['event','Разделы для мероприятий']];
+ for(var gi=0;gi<groups.length;gi++){
+  h+='<div class="deplist-head">'+groups[gi][1]+'</div>';
+  var any=false;
+  for(var i=0;i<DEPS.length;i++){
+   var d=DEPS[i];
+   if(d.cat!==groups[gi][0]){continue}
+   any=true;
+   h+='<div class="deprow">'+
+    '<span class="ddot" style="background:'+d.c+';box-shadow:0 0 8px 1px '+hex2rgba(d.c,.45)+'"></span>'+
+    '<div class="dep-name" contenteditable="true" data-ph="Название" data-depk="'+esc(d.k)+'">'+esc(d.n)+'</div>'+
+    '<input type="color" class="dep-color" value="'+d.c+'" title="Цвет раздела" oninput="setDepColor(\''+esc(d.k)+'\',this.value)">'+
+    '<button class="btn ghost slim dep-cls-btn" onclick="openClassesManager(\''+esc(d.k)+'\')">🏷 Классы · '+d.classes.length+'</button>'+
+    '<button class="btn warn slim dep-del" title="Удалить раздел" onclick="delDep(\''+esc(d.k)+'\')">🗑</button>'+
+   '</div>';
   }
+  if(!any){ h+='<div class="gempty" style="margin-bottom:10px">Нет разделов</div>' }
  }
- var k='dep_'+Date.now().toString(36)+Math.floor(Math.random()*99);
- var c=DEP_PALETTE[DEPS.length%DEP_PALETTE.length];
- DEPS.push({k:k,s:name,n:name,c:c,cat:cat,classes:[]});
- commit();
- render();
- renderDepsModal();
- toast('Раздел добавлен: «'+name+'»');
+ h+='</div>'+
+  '<div class="m-foot"><div class="newdep" style="flex:1;margin-top:0">'+
+   '<input class="inp" id="ndName" placeholder="Название нового раздела…">'+
+   '<select class="sel" id="ndCat"><option value="main">Основной</option><option value="event">Мероприятия</option></select>'+
+   '<button class="btn" onclick="addDep()">＋ Добавить</button>'+
+  '</div></div>'+
+ '</div></div>';
+ root.innerHTML=h;
+ qsa('.dep-name',root).forEach(function(el){
+  el.addEventListener('blur',function(){
+   var d=findDep(el.getAttribute('data-depk'));
+   if(!d){return}
+   var v=el.textContent.replace(/\s+/g,' ').trim();
+   if(!v||v===d.n){return}
+   d.n=v;
+   d.s=v.length>14?v.slice(0,13)+'…':v;
+   commit();
+   render();
+  });
+  el.addEventListener('keydown',function(e){ if(e.key==='Enter'){e.preventDefault();el.blur()} });
+ });
 }
-function deleteDep(k){
- if(!adminMode){return}
+function addDep(){
+ var nm=$('#ndName')?$('#ndName').value.trim():'';
+ if(!nm){toast('Введите название раздела',true);return}
+ var cat=($('#ndCat')&&$('#ndCat').value==='event')?'event':'main';
+ var k='d'+Date.now().toString(36)+Math.floor(Math.random()*100);
+ DEPS.push({
+  k:k,
+  s:nm.length>14?nm.slice(0,13)+'…':nm,
+  n:nm,
+  c:DEP_PALETTE[DEPS.length%DEP_PALETTE.length],
+  cat:cat,
+  classes:defaultClassesFor(cat)
+ });
+ commit();
+ renderDepsModal();
+ render();
+ toast('Раздел добавлен');
+}
+function delDep(k){
  var d=findDep(k);
  if(!d){return}
  var used=countDepUsage(k);
- if(used>0){
-  toast('В разделе «'+d.n+'» '+used+' карточек — сначала перенесите или удалите их',true);
-  return;
- }
- if(!confirm('Удалить раздел «'+d.n+'»?')){return}
- for(var i=0;i<DEPS.length;i++){
-  if(DEPS[i].k===k){DEPS.splice(i,1);break}
- }
+ if(used){ toast('В разделе «'+d.n+'» есть записи ('+used+') — сначала удалите или перенесите их',true); return }
+ if(!window.confirm('Удалить раздел «'+d.n+'»?')){return}
+ DEPS=DEPS.filter(function(x){return x.k!==k});
+ if(state.dep===k){ state.dep='all'; state.cls='all' }
  commit();
- render();
  renderDepsModal();
+ render();
  toast('Раздел удалён');
 }
-
-/* ===================== МЕНЕДЖЕР КЛАССОВ РАЗДЕЛА ===================== */
-function openClassesManager(depKey){
- if(!adminMode){return}
- var d=findDep(depKey);
- if(!d){toast('Раздел не найден',true);return}
- currentClassDepK=depKey;
- renderClassesModal();
+function setDepColor(k,c){
+ var d=findDep(k);
+ if(!d){return}
+ d.c=c;
+ commit();
+ render();
 }
-function renderClassesModal(){
- var d=findDep(currentClassDepK);
- if(!d){openDepsManager();return}
- var rows='';
- for(var i=0;i<d.classes.length;i++){ rows+=classRowHtml(d.classes[i]) }
- if(!rows){ rows='<div style="color:#5b6675;font-size:12px;padding:6px 0">Пока нет классов — добавьте ниже</div>' }
- var h=
-  '<div class="deplist-head">Классы раздела «'+esc(d.n)+'»</div>'+
-  '<div>'+rows+'</div>'+
-  '<div class="newdep">'+
-   '<input class="inp" id="newClassName" type="text" maxlength="40" placeholder="Название нового класса" autocomplete="off">'+
-   '<button class="btn" onclick="addClassFromModal()">＋ Добавить</button>'+
+function openClassesManager(depK){
+ var d=findDep(depK);
+ if(!d){return}
+ currentClassDepK=depK;
+ var root=$('#croot');
+ if(!root){return}
+ var h='<div class="back" onclick="if(event.target===this)renderDepsModal()"><div class="modal smw">'+
+  '<div class="m-head"><div class="mh-nm">🏷️ Классы · '+esc(d.n)+'</div>'+
+  '<div class="mh-sub">Классы группируют машины внутри раздела. При удалении класса его записи перейдут в первый класс.</div>'+
+  '<button class="m-close" onclick="renderDepsModal()" title="Назад">←</button></div>'+
+  '<div class="m-body"><div class="clsgrid">';
+ if(!d.classes.length){
+  h+='<div class="gempty">В этом разделе нет классов</div>';
+ }
+ for(var i=0;i<d.classes.length;i++){
+  var c=d.classes[i];
+  h+='<div class="deprow">'+
+   '<span class="ddot" style="background:'+c.c+';box-shadow:0 0 8px 1px '+hex2rgba(c.c,.45)+'"></span>'+
+   '<div class="dep-name" contenteditable="true" data-ph="Название" data-clsk="'+esc(c.k)+'">'+esc(c.n)+'</div>'+
+   '<i class="cn" title="Записей в классе">'+countClassUsage(depK,c.k)+'</i>'+
+   '<input type="color" class="dep-color" value="'+c.c+'" title="Цвет класса" oninput="setClassColor(\''+esc(depK)+'\',\''+esc(c.k)+'\',this.value)">'+
+   '<button class="btn warn slim dep-del" title="Удалить класс" onclick="delClass(\''+esc(depK)+'\',\''+esc(c.k)+'\')">🗑</button>'+
   '</div>';
- $('#croot').innerHTML=
- '<div class="back" onclick="if(event.target===this)closeC()"><div class="modal" style="max-width:520px">'+
-  '<div class="m-head"><div class="mh-nm" style="font-size:17px">📋 Классы · '+esc(d.n)+'</div>'+
-  '<div class="mh-sub">Подразделы внутри раздела. Действуют только на карточки этого раздела. Удалять можно только пустые классы.</div>'+
-  '<button class="m-close" onclick="closeC()">✕</button></div>'+
-  '<div class="m-body">'+h+'</div>'+
-  '<div class="m-foot">'+
-   '<button class="btn ghost" onclick="openDepsManager()">← К разделам</button>'+
-   '<button class="btn" onclick="closeC()">Готово</button>'+
-  '</div>'+
+ }
+ h+='</div></div>'+
+  '<div class="m-foot"><div class="newdep" style="flex:1;margin-top:0">'+
+   '<input class="inp" id="ncName" placeholder="Новый класс…">'+
+   '<input type="color" id="ncColor" value="#4da3ff" title="Цвет" style="flex:0 0 auto;width:42px;height:38px;padding:3px;border-radius:10px;border:1px solid var(--line);background:#141a23;cursor:pointer">'+
+   '<button class="btn" onclick="addClass(\''+esc(depK)+'\')">＋</button>'+
+  '</div></div>'+
  '</div></div>';
- setTimeout(function(){ var n=$('#newClassName'); if(n){n.focus()} },60);
+ root.innerHTML=h;
+ qsa('.dep-name',root).forEach(function(el){
+  el.addEventListener('blur',function(){
+   var ck=el.getAttribute('data-clsk');
+   var v=el.textContent.replace(/\s+/g,' ').trim();
+   if(!v){return}
+   for(var i=0;i<d.classes.length;i++){
+    if(d.classes[i].k===ck){
+     if(d.classes[i].n!==v){ d.classes[i].n=v; commit(); render() }
+     break;
+    }
+   }
+  });
+  el.addEventListener('keydown',function(e){ if(e.key==='Enter'){e.preventDefault();el.blur()} });
+ });
 }
-function classRowHtml(c){
- return '<div class="deprow" data-clsk="'+esc(c.k)+'">'+
-  '<span class="ddot" style="background:'+c.c+'"></span>'+
-  '<input class="inp dep-name class-name" type="text" maxlength="40" data-clsk="'+esc(c.k)+'" value="'+esc(c.n)+'" placeholder="Название" autocomplete="off">'+
-  '<input class="dep-color class-color" type="color" data-clsk="'+esc(c.k)+'" value="'+c.c+'" title="Цвет">'+
-  '<button class="btn warn slim dep-del" data-classdel="'+esc(c.k)+'" title="Удалить класс">✕</button>'+
-  '</div>';
-}
-function addClassFromModal(){
- if(!adminMode){return}
- var d=findDep(currentClassDepK);
+function addClass(depK){
+ var d=findDep(depK);
  if(!d){return}
- var nEl=$('#newClassName');
- var name=nEl?nEl.value.trim():'';
- if(!name){toast('Введите название класса',true);if(nEl){nEl.focus()}return}
- for(var i=0;i<d.classes.length;i++){
-  if(d.classes[i].n.toLowerCase()===name.toLowerCase()){
-   toast('Такой класс уже есть в этом разделе',true);return;
-  }
- }
- var k='cls_'+Date.now().toString(36)+Math.floor(Math.random()*99);
- var c=DEP_PALETTE[(d.classes.length+3)%DEP_PALETTE.length];
- d.classes.push({k:k,n:name,c:c});
+ var nm=$('#ncName')?$('#ncName').value.trim():'';
+ if(!nm){toast('Введите название класса',true);return}
+ var col=$('#ncColor')?$('#ncColor').value:'#4da3ff';
+ d.classes.push({k:'k'+Date.now().toString(36)+Math.floor(Math.random()*100),n:nm,c:col});
  commit();
+ openClassesManager(depK);
  render();
- renderClassesModal();
- toast('Класс добавлен: «'+name+'»');
+ toast('Класс добавлен');
 }
-function deleteClass(depKey,clsKey){
- if(!adminMode){return}
- var d=findDep(depKey);
+function delClass(depK,clsK){
+ var d=findDep(depK);
  if(!d){return}
- var idx=-1,clsObj=null;
+ if(d.classes.length<=1){toast('Должен остаться хотя бы один класс',true);return}
+ var used=countClassUsage(depK,clsK);
+ if(used&&!window.confirm('В классе '+used+' записей — они перейдут в первый класс. Продолжить?')){return}
  for(var i=0;i<d.classes.length;i++){
-  if(d.classes[i].k===clsKey){idx=i;clsObj=d.classes[i];break}
+  if(d.classes[i].k===clsK){ d.classes.splice(i,1); break }
  }
- if(idx<0){return}
- var used=countClassUsage(depKey,clsKey);
- if(used>0){
-  toast('В классе «'+clsObj.n+'» '+used+' карточек — сначала перенесите или удалите их',true);
-  return;
+ for(var j=0;j<ITEMS.length;j++){
+  if(ITEMS[j].dep===depK&&ITEMS[j].cls===clsK){ ITEMS[j].cls=d.classes[0].k }
  }
- if(!confirm('Удалить класс «'+clsObj.n+'»?')){return}
- d.classes.splice(idx,1);
+ if(state.cls===clsK){ state.cls='all' }
  commit();
+ openClassesManager(depK);
  render();
- renderClassesModal();
  toast('Класс удалён');
 }
-
-/* изменения полей разделов / классов */
-document.addEventListener('change',function(e){
- var t=e.target;
- if(!t||!t.getAttribute){return}
-
- /* классы */
- var ck=t.getAttribute('data-clsk');
- if(ck){
-  var d=findDep(currentClassDepK);
-  if(!d){return}
-  var c=null;
-  for(var i=0;i<d.classes.length;i++){ if(d.classes[i].k===ck){c=d.classes[i];break} }
-  if(!c){return}
-  if(t.classList&&t.classList.contains('class-name')){
-   var v=t.value.trim();
-   if(!v){t.value=c.n;return}
-   if(v===c.n){return}
-   c.n=v;
-   commit();
-   render();
-  }else if(t.classList&&t.classList.contains('class-color')){
-   var cv=t.value;
-   if(!/^#[0-9a-fA-F]{6}$/.test(cv)){return}
-   c.c=cv;
-   var row=t.closest('.deprow');
-   if(row){
-    var dot=row.querySelector('.ddot');
-    if(dot){dot.style.background=cv;dot.style.boxShadow='0 0 8px 1px '+cv+'66'}
-   }
-   commit();
-   render();
-  }
-  return;
+function setClassColor(depK,clsK,c){
+ var d=findDep(depK);
+ if(!d){return}
+ for(var i=0;i<d.classes.length;i++){
+  if(d.classes[i].k===clsK){ d.classes[i].c=c; break }
  }
-
- /* разделы */
- var k=t.getAttribute('data-depk');
- if(!k){return}
- var dd=findDep(k);
- if(!dd){return}
- if(t.classList&&t.classList.contains('dep-name')){
-  var v2=t.value.trim();
-  if(!v2){t.value=dd.n;return}
-  if(v2===dd.n){return}
-  dd.n=v2; dd.s=v2;
-  commit();
-  render();
- }else if(t.classList&&t.classList.contains('dep-color')){
-  var cv2=t.value;
-  if(!/^#[0-9a-fA-F]{6}$/.test(cv2)){return}
-  dd.c=cv2;
-  var row2=t.closest('.deprow');
-  if(row2){
-   var dot2=row2.querySelector('.ddot');
-   if(dot2){dot2.style.background=cv2;dot2.style.boxShadow='0 0 8px 1px '+cv2+'66'}
-  }
-  commit();
-  render();
- }
-});
-
-/* ===================== СОСТОЯНИЕ / РЕНДЕР ===================== */
-var state={kind:'cars',cat:'main',dep:'all',q:''};
-
-function setKind(k){
- state.kind=k;
- state.cat='main';
- state.dep='all';
- state.q='';
- var q=$('#q');if(q){q.value=''}
- qsa('.tab').forEach(function(t){t.classList.toggle('on',t.dataset.kind===k)});
- if(!booted){return}
- refade();
+ commit();
  render();
 }
-function setCat(c){state.cat=c;state.dep='all';render()}
-function setDep(d){state.dep=d;renderChips();renderGrid()}
-function refade(){var c=$('#content');if(!c){return}c.style.animation='none';void c.offsetWidth;c.style.animation=''}
 
-function renderHead(){
- var isCars=state.kind==='cars';
- $('#hTitle').textContent=isCars?'Автопарк':'Форма';
- var sub=isCars
-  ?'Транспортные средства · нажмите на пустое окно фото, чтобы загрузить изображение'
-  :(adminMode?'Форма одежды · нажмите на пустое окно фото, чтобы загрузить изображение':'Форма одежды ведомств');
- if(isCars&&isGrouped()&&adminMode){sub+=' · перетащите машину за фото в другой класс'}
- else if(isCars&&state.dep==='all'){sub+=' · выберите раздел, чтобы увидеть классы'}
- $('#hSub').textContent=sub;
- $('#cnt').textContent=countItems(state.kind,state.cat,null);
- $('#logoIc').textContent=isCars?'🚔':'🎽';
- $('#tbTitle').textContent=isCars?'МВД · АВТОПАРК':'МВД · ФОРМА';
- $('#addBtn').style.display=adminMode?'':'none';
- $('#addBtn').textContent=isCars?'＋ Добавить машину':'＋ Добавить форму';
+/* ===================== СОСТОЯНИЕ И РЕНДЕР ===================== */
+var state={kind:'cars',cat:'main',dep:'all',cls:'all',q:''};
+var dragId=null;
+
+function setKind(k){
+ if(state.kind===k){return}
+ state.kind=k;
+ state.dep='all';
+ state.cls='all';
+ state.q='';
+ var qi=$('#q'); if(qi){qi.value=''}
+ qsa('.tab').forEach(function(t){ t.classList.toggle('on',t.getAttribute('data-kind')===k) });
+ render();
 }
+function setCat(k){ state.cat=k; state.dep='all'; state.cls='all'; render() }
+function setDep(k){ state.dep=k; state.cls='all'; render() }
+function setCls(k){ state.cls=k; render() }
+
 function renderCats(){
- var a=CATS[state.kind],h='';
- for(var i=0;i<a.length;i++){
-  var n=countItems(state.kind,a[i].k,null);
-  h+='<button class="cat'+(state.cat===a[i].k?' on':'')+'" onclick="setCat(\''+a[i].k+'\')">'+
-     '<span class="cat-ic">'+a[i].ic+'</span>'+esc(a[i].n)+(n?'<b class="cn">'+n+'</b>':'')+'</button>';
+ var box=$('#cats');
+ if(!box){return}
+ var arr=CATS[state.kind];
+ var h='';
+ for(var i=0;i<arr.length;i++){
+  var c=arr[i];
+  h+='<button class="cat'+(state.cat===c.k?' on':'')+'" onclick="setCat(\''+c.k+'\')">'+
+   '<span class="cat-ic">'+c.ic+'</span>'+esc(c.n)+' <i class="cn">'+countItems(state.kind,c.k,null)+'</i></button>';
  }
- $('#cats').innerHTML=h;
+ box.innerHTML=h;
+}
+function chipBtn(act,val,label,color,on,cnt){
+ return '<button class="chip'+(on?' on':'')+'" style="--cc:'+color+';--ccb:'+hex2rgba(color,.18)+'" onclick="'+act+'(\''+esc(val)+'\')">'+
+  '<span class="dot"></span>'+esc(label)+(typeof cnt==='number'?' <i class="cn">'+cnt+'</i>':'')+'</button>';
 }
 function renderChips(){
- var total=countItems(state.kind,state.cat,null);
- var h='<div class="chip'+(state.dep==='all'?' on':'')+'" onclick="setDep(\'all\')"><span class="dot" style="background:#8b95a7"></span>Все<b class="cn">'+total+'</b></div>';
- for(var i=0;i<DEPS.length;i++){
-  if(DEPS[i].cat!==state.cat){continue}
-  var n=countItems(state.kind,state.cat,DEPS[i].k);
-  h+='<div class="chip'+(state.dep===DEPS[i].k?' on':'')+'" style="--cc:'+DEPS[i].c+';--ccb:'+hex2rgba(DEPS[i].c,.16)+'" onclick="setDep(\''+DEPS[i].k+'\')">'+
-     '<span class="dot" style="background:'+DEPS[i].c+'"></span>'+esc(DEPS[i].n)+(n?'<b class="cn">'+n+'</b>':'')+'</div>';
- }
- $('#chips').innerHTML=h;
-}
-function cardHtml(it,i){
- var d=dep(it.dep),A=adminMode,G=isGrouped();
- var ph,tools='',ce='',drag='';
- if(it.photo){
-  ph='<img src="'+it.photo+'" alt="">';
- }else if(A){
-  ph='<div class="vph-empty"><span class="pe-ic">🖼️</span><b>Загрузить фото</b><span>клик или перетащите файл</span></div>';
+ var box=$('#chips');
+ if(!box){return}
+ var h='';
+ if(isGrouped()){
+  h+='<button class="chip" onclick="setDep(\'all\')">← Все разделы</button>';
+  h+=chipBtn('setCls','all','Все классы','#8b95a7',state.cls==='all',countItems(state.kind,state.cat,state.dep));
+  var classes=classesOfDep(state.dep);
+  for(var i=0;i<classes.length;i++){
+   var c=classes[i];
+   h+=chipBtn('setCls',c.k,c.n,c.c,state.cls===c.k,countClassUsage(state.dep,c.k));
+  }
  }else{
-  ph='<div class="vph-empty plain"><span class="pe-ic">📷</span><b>Нет фото</b></div>';
+  h+=chipBtn('setDep','all','Все разделы','#8b95a7',state.dep==='all',countItems(state.kind,state.cat,null));
+  for(var j=0;j<DEPS.length;j++){
+   var d=DEPS[j];
+   if(d.cat!==state.cat){continue}
+   h+=chipBtn('setDep',d.k,d.n,d.c,state.dep===d.k,countItems(state.kind,state.cat,d.k));
+  }
  }
- if(A){
-  ce=' contenteditable="true" spellcheck="false"';
-  var hasCls=(classesOfDep(it.dep).length>0);
-  tools='<div class="vph-tools">'+
-   '<button class="vtool vtool-org" title="Сменить раздел">🏷</button>'+
-   (hasCls?'<button class="vtool vtool-cls" title="Изменить класс">⇄</button>':'')+
-   '<button class="vtool vtool-sw" title="Загрузить / сменить фото">↻</button>'+
-   '<button class="vtool vtool-del" title="Удалить карточку">✕</button>'+
-   '</div>';
-  if(G){drag=' draggable="true"'}
- }
- var sp=it.kind==='cars'?
-  '<div class="vsp"><span class="l">Скорость</span><b class="vnum"'+ce+' data-ph="—">'+esc(it.speed)+'</b><i>км/ч</i></div>':'';
- return '<div class="vcard" style="--dc:'+d.c+';animation-delay:'+Math.min(i*28,340)+'ms" data-id="'+it.id+'">'+
-  '<div class="vph'+(it.photo?'':' empty')+'"'+drag+(drag?' title="Перетащите в другой класс"':'')+'>'+ph+
-   '<span class="vdep" style="color:'+d.c+';border-color:'+d.c+'55;background:'+hex2rgba(d.c,.14)+'">'+esc(d.s)+'</span>'+tools+
-  '</div>'+
-  '<div class="vbody">'+
-   '<div class="vname"'+ce+' data-ph="Название">'+esc(it.name)+'</div>'+
-   '<div class="vdesc"'+ce+' data-ph="Описание…">'+esc(it.desc)+'</div>'+
-   sp+
-  '</div>'+
- '</div>';
+ box.innerHTML=h;
 }
-function filterList(){
- var list=[],q=state.q.toLowerCase();
+function visibleItems(){
+ var q=(state.q||'').toLowerCase();
+ var out=[];
  for(var i=0;i<ITEMS.length;i++){
   var it=ITEMS[i];
   if(it.kind!==state.kind||it.cat!==state.cat){continue}
   if(state.dep!=='all'&&it.dep!==state.dep){continue}
-  if(q&&(it.name+' '+it.desc).toLowerCase().indexOf(q)<0){continue}
-  list.push(it);
+  if(state.cls!=='all'&&clsOf(it)!==state.cls){continue}
+  if(q){
+   var hay=((it.name||'')+' '+(it.desc||'')).toLowerCase();
+   if(hay.indexOf(q)<0){continue}
+  }
+  out.push(it);
  }
- return list;
+ return out;
+}
+function cardColor(it){
+ if(it.cls){
+  var classes=classesOfDep(it.dep);
+  for(var i=0;i<classes.length;i++){
+   if(classes[i].k===it.cls){return classes[i].c}
+  }
+ }
+ return dep(it.dep).c;
+}
+function cardHtml(it){
+ var d=dep(it.dep);
+ var dc=cardColor(it);
+ var tools='';
+ if(adminMode){
+  tools='<div class="vph-tools">'+
+   '<button class="vtool" title="Редактировать" onclick="event.stopPropagation();openEdit(\''+it.id+'\')">✏️</button>'+
+   '<button class="vtool vtool-del" title="Удалить" onclick="event.stopPropagation();delItem(\''+it.id+'\')">🗑</button>'+
+  '</div>';
+ }
+ var ph;
+ if(it.photo){
+  ph='<img src="'+it.photo+'" alt="" onclick="event.stopPropagation();openLb(\''+it.id+'\')">';
+ }else if(adminMode){
+  ph='<div class="vph-empty" onclick="event.stopPropagation();pickPhotoFor(\''+it.id+'\')"><div class="pe-ic">📷</div><b>Добавить фото</b><span>клик или перетащите</span></div>';
+ }else{
+  ph='<div class="vph-empty plain"><div class="pe-ic">'+(state.kind==='cars'?'🚗':'🎽')+'</div><b>Нет фото</b><span></span></div>';
+ }
+ var ed=adminMode?' contenteditable="true"':'';
+ return '<div class="vcard" data-id="'+it.id+'" style="--dc:'+dc+'">'+
+  '<div class="vph'+(it.photo?'':' empty')+'">'+
+   '<span class="vdep" style="color:'+d.c+';border-color:'+hex2rgba(d.c,.45)+'">'+esc(d.s)+'</span>'+
+   tools+ph+
+  '</div>'+
+  '<div class="vbody">'+
+   '<div class="vname"'+ed+' data-ph="Название" data-f="name">'+esc(it.name||'')+'</div>'+
+   '<div class="vdesc"'+ed+' data-ph="Описание" data-f="desc">'+esc(it.desc||'')+'</div>'+
+   '<div class="vsp"><span class="l">Скорость</span><i>км/ч</i><b'+ed+' data-ph="—" data-f="speed">'+esc(it.speed||'')+'</b></div>'+
+  '</div>'+
+ '</div>';
 }
 function renderGrid(){
- var list=filterList();
- var vg=$('#vgrid');
- if(isGrouped()){
-  vg.classList.add('grouped');
-  var dObj=findDep(state.dep);
-  var classes=dObj.classes;
-  var h='',delay=0;
-  for(var g=0;g<classes.length;g++){
-   var cl=classes[g],sub=[];
-   for(var i=0;i<list.length;i++){ if(clsOf(list[i])===cl.k){sub.push(list[i])} }
-   h+='<div class="gsec" data-cls="'+cl.k+'" style="--gc:'+cl.c+'">'+
+ var grid=$('#vgrid'), emp=$('#vempty');
+ if(!grid){return}
+ var items=visibleItems();
+ var grouped=isGrouped()&&state.cls==='all';
+ if(grouped){
+  grid.className='vgrid grouped';
+  var classes=classesOfDep(state.dep);
+  var h='';
+  for(var i=0;i<classes.length;i++){
+   var cl=classes[i];
+   var grp=[];
+   for(var j=0;j<items.length;j++){ if(clsOf(items[j])===cl.k){ grp.push(items[j]) } }
+   h+='<div class="gsec" data-cls="'+esc(cl.k)+'" style="--gc:'+cl.c+'">'+
     '<div class="ghead">'+
-    '<span class="gd" style="background:'+cl.c+';box-shadow:0 0 8px '+cl.c+'66"></span>'+
-    '<span class="gname" style="color:'+cl.c+'">'+esc(cl.n)+'</span>'+
-    '<b class="cn">'+sub.length+'</b>'+
-    '<span class="gline"></span>'+
-    (adminMode?'<span class="ghint">перетащите машины сюда</span>':'')+
-    (adminMode?'<button class="btn ghost slim" style="padding:3px 8px;font-size:10.5px" onclick="openClassesManager(\''+state.dep+'\')" title="Управлять классами">⚙️</button>':'')+
-    '</div>';
-   if(sub.length){
-    h+='<div class="ggrid">';
-    for(var s=0;s<sub.length;s++){ h+=cardHtml(sub[s],delay++) }
-    h+='</div>';
-   }else{
-    h+='<div class="gempty">'+(adminMode?'Пусто — перетащите сюда карточку':'Пока нет машин')+'</div>';
-   }
-   h+='</div>';
+     '<span class="gd" style="background:'+cl.c+';box-shadow:0 0 8px 1px '+hex2rgba(cl.c,.45)+'"></span>'+
+     '<span class="gname">'+esc(cl.n)+'</span><i class="cn">'+grp.length+'</i>'+
+     '<span class="gline"></span><span class="ghint">перетащите карточку, чтобы сменить класс</span>'+
+    '</div>'+
+    '<div class="ggrid">'+(grp.length?grp.map(cardHtml).join(''):'<div class="gempty">В классе пока пусто</div>')+'</div>'+
+   '</div>';
   }
-  $('#vempty').style.display='none';
-  vg.innerHTML=h;
-  return;
- }
- vg.classList.remove('grouped');
- if(!list.length){
-  vg.innerHTML='';
-  $('#vempty').style.display='block';
-  var any=countItems(state.kind,state.cat,null);
-  $('#vempty').textContent=any
-   ?'По текущему фильтру и запросу ничего не найдено'
-   :(state.kind==='cars'?'В этой категории пока нет машин':'В этой категории пока нет формы');
+  grid.innerHTML=h;
  }else{
-  $('#vempty').style.display='none';
-  vg.innerHTML=list.map(cardHtml).join('');
+  grid.className='vgrid';
+  grid.innerHTML=items.map(cardHtml).join('');
  }
-}
-function render(){renderTop();renderHead();renderCats();renderChips();renderGrid()}
-
-/* ===================== ФОТО ===================== */
-var pickMode=null, pickId=null, addPhoto=null;
-function pickPhoto(mode,id){
- pickMode=mode;
- pickId=id;
- $('#fileInp').value='';
- $('#fileInp').click();
-}
-$('#fileInp').addEventListener('change',function(){
- var f=this.files[0];
- if(!f){return}
- loadFile(f,pickMode,pickId);
- this.value='';
-});
-function loadFile(f,mode,id){
- if(!/^image\//.test(f.type)){toast('Это не изображение',true);return}
- if(f.size>15*1024*1024){toast('Файл слишком большой (>15 МБ)',true);return}
- var url=URL.createObjectURL(f),im=new Image();
- im.onload=function(){
-  URL.revokeObjectURL(url);
-  var data=compress(im);
-  if(mode==='add'){addPhoto=data;setAddPrev(data)}
-  else{
-   var it=byId(id);
-   if(it){it.photo=data;commit();renderGrid();toast('Фото загружено')}
-  }
- };
- im.onerror=function(){URL.revokeObjectURL(url);toast('Не удалось прочитать файл',true)};
- im.src=url;
-}
-function compress(im){
- var steps=[[1100,.82],[900,.74],[800,.64],[700,.52]];
- for(var i=0;i<steps.length;i++){
-  var k=Math.min(1,steps[i][0]/Math.max(im.width,im.height));
-  var c=document.createElement('canvas');
-  c.width=Math.max(1,Math.round(im.width*k));
-  c.height=Math.max(1,Math.round(im.height*k));
-  var ctx=c.getContext('2d');
-  ctx.fillStyle='#fff';
-  ctx.fillRect(0,0,c.width,c.height);
-  ctx.drawImage(im,0,0,c.width,c.height);
-  var data=c.toDataURL('image/jpeg',steps[i][1]);
-  if(data.length<200*1024||i===steps.length-1){return data}
+ var c=$('#cnt');
+ if(c){ c.textContent=items.length }
+ if(emp){
+  if(!items.length){
+   emp.style.display='block';
+   emp.textContent=state.q?'Ничего не найдено':(adminMode?'Здесь пока пусто — добавьте первую запись':'Здесь пока пусто');
+  }else{ emp.style.display='none' }
  }
+ applyCardEvents();
 }
-
-/* ===================== ПЕРЕТАСКИВАНИЕ ===================== */
-var vgrid=$('#vgrid');
-function dragHasFiles(e){
- if(!e.dataTransfer||!e.dataTransfer.types){return false}
- var t=e.dataTransfer.types;
- for(var i=0;i<t.length;i++){if(t[i]==='Files'){return true}}
- return false;
+function render(){
+ renderTop();
+ renderCats();
+ renderChips();
+ renderGrid();
+ var t=$('#hTitle');
+ if(t){ t.textContent=(state.kind==='cars'?'Автопарк':'Форма') }
+ var s=$('#hSub');
+ if(s){ s.textContent=catName(state.kind,state.cat)+(state.dep!=='all'?' · '+dep(state.dep).n:'') }
+ var ab=$('#addBtn');
+ if(ab){ ab.textContent=(state.kind==='cars'?'＋ Добавить машину':'＋ Добавить форму') }
 }
-vgrid.addEventListener('dragstart',function(e){
- if(!adminMode||!isGrouped()){return}
- var ph=e.target.closest?e.target.closest('.vph'):null;
- var card=ph?ph.closest('.vcard'):null;
- if(!card||card.classList.contains('sk')){return}
- try{ e.dataTransfer.setData('text/plain',card.dataset.id) }catch(err){}
- e.dataTransfer.effectAllowed='move';
- qsa('.vcard.dragging',vgrid).forEach(function(x){x.classList.remove('dragging')});
- card.classList.add('dragging');
-});
-vgrid.addEventListener('dragend',function(){
- qsa('.vcard.dragging',vgrid).forEach(function(x){x.classList.remove('dragging')});
- qsa('.gsec.dragover',vgrid).forEach(function(x){x.classList.remove('dragover')});
-});
-vgrid.addEventListener('dragover',function(e){
- if(!adminMode){return}
- if(isGrouped()&&!dragHasFiles(e)){
-  var sec=e.target.closest('.gsec');
-  qsa('.gsec.dragover',vgrid).forEach(function(x){x.classList.remove('dragover')});
-  qsa('.vph.drag',vgrid).forEach(function(x){x.classList.remove('drag')});
-  if(sec){e.preventDefault();e.dataTransfer.dropEffect='move';sec.classList.add('dragover')}
-  return;
- }
- qsa('.gsec.dragover',vgrid).forEach(function(x){x.classList.remove('dragover')});
- var ph=e.target.closest('.vph');
- qsa('.vph.drag',vgrid).forEach(function(x){x.classList.remove('drag')});
- if(ph){e.preventDefault();ph.classList.add('drag')}
-});
-vgrid.addEventListener('drop',function(e){
- if(!adminMode){return}
- if(isGrouped()&&!dragHasFiles(e)){
-  var sec=e.target.closest('.gsec');
-  qsa('.gsec.dragover',vgrid).forEach(function(x){x.classList.remove('dragover')});
-  qsa('.vcard.dragging',vgrid).forEach(function(x){x.classList.remove('dragging')});
-  if(!sec){return}
-  e.preventDefault();
-  var id='';
-  try{ id=e.dataTransfer.getData('text/plain') }catch(err){}
+function bindEdit(el,it,field){
+ if(!el){return}
+ el.addEventListener('blur',function(){
+  var v=el.textContent.replace(/\s+/g,' ').trim();
+  if((it[field]||'')===v){return}
+  it[field]=v;
+  commit();
+ });
+ el.addEventListener('keydown',function(e){
+  if(e.key==='Enter'){ e.preventDefault(); el.blur() }
+ });
+}
+function applyCardEvents(){
+ qsa('.vcard').forEach(function(card){
+  var id=card.getAttribute('data-id');
   if(!id){return}
   var it=byId(id);
   if(!it){return}
-  var g=sec.dataset.cls;
-  var oldG=clsOf(it);
-  if(oldG!==g){
-   var oldName=classNameOf(it.dep,oldG);
-   it.cls=g;
+  if(adminMode){
+   card.draggable=true;
+   card.addEventListener('dragstart',function(e){
+    dragId=id;
+    card.classList.add('dragging');
+    try{ e.dataTransfer.setData('text/plain',id); e.dataTransfer.effectAllowed='move' }catch(err){}
+   });
+   card.addEventListener('dragend',function(){
+    card.classList.remove('dragging');
+    dragId=null;
+    qsa('.gsec').forEach(function(s){s.classList.remove('dragover')});
+   });
+   bindEdit(card.querySelector('.vname'),it,'name');
+   bindEdit(card.querySelector('.vdesc'),it,'desc');
+   bindEdit(card.querySelector('.vsp b'),it,'speed');
+  }
+  var phEl=card.querySelector('.vph');
+  if(phEl){
+   phEl.addEventListener('dragover',function(e){
+    if(!adminMode){return}
+    var has=false;
+    if(e.dataTransfer&&e.dataTransfer.types){
+     for(var i=0;i<e.dataTransfer.types.length;i++){ if(e.dataTransfer.types[i]==='Files'){has=true;break} }
+    }
+    if(has){ e.preventDefault(); phEl.classList.add('drag') }
+   });
+   phEl.addEventListener('dragleave',function(){ phEl.classList.remove('drag') });
+   phEl.addEventListener('drop',function(e){
+    phEl.classList.remove('drag');
+    if(!adminMode){return}
+    var f=e.dataTransfer.files&&e.dataTransfer.files[0];
+    if(!f){return}
+    e.preventDefault();
+    e.stopPropagation();
+    compressImage(f,function(data){
+     it.photo=data;
+     commit();
+     render();
+     toast('Фото обновлено');
+    });
+   });
+  }
+ });
+ qsa('.gsec').forEach(function(sec){
+  sec.addEventListener('dragover',function(e){
+   if(dragId){ e.preventDefault(); sec.classList.add('dragover') }
+  });
+  sec.addEventListener('dragleave',function(){ sec.classList.remove('dragover') });
+  sec.addEventListener('drop',function(e){
+   e.preventDefault();
+   sec.classList.remove('dragover');
+   if(!dragId){return}
+   var it=byId(dragId);
+   var ck=sec.getAttribute('data-cls');
+   if(!it||!ck||it.cls===ck){return}
+   it.cls=ck;
    commit();
    render();
-   toast('«'+(it.name||'без названия')+'»: '+oldName+' → '+classNameOf(it.dep,g));
-  }
-  return;
- }
- var ph=e.target.closest('.vph'),card=e.target.closest('.vcard');
- qsa('.vph.drag',vgrid).forEach(function(x){x.classList.remove('drag')});
- if(ph&&card){
-  e.preventDefault();
-  var f=e.dataTransfer.files[0];
-  if(f){loadFile(f,'item',card.dataset.id)}
- }
-});
-
-/* ===================== КЛИКИ ===================== */
-vgrid.addEventListener('click',function(e){
- var t=e.target,card=t.closest('.vcard');
- if(!card){return}
- var id=card.dataset.id;
- if(!adminMode){
-  if(t.closest('.vph')&&t.tagName==='IMG'){openLB(id)}
-  return;
- }
- if(t.closest('.vtool-del')){askDel(id);return}
- if(t.closest('.vtool-cls')){askClass(id);return}
- if(t.closest('.vtool-org')){askOrg(id);return}
- if(t.closest('.vtool-sw')){pickPhoto('item',id);return}
- var ph=t.closest('.vph');
- if(ph){
-  if(t.tagName==='IMG'){openLB(id)}
-  else{pickPhoto('item',id)}
- }
-});
-
-vgrid.addEventListener('blur',function(e){
- var t=e.target;
- if(!adminMode||!t.isContentEditable){return}
- var card=t.closest('.vcard');
- if(!card){return}
- var it=byId(card.dataset.id);
- if(!it){return}
- var val=t.innerText.replace(/\u00a0/g,' ').trim();
- if(t.classList.contains('vname')){it.name=val}
- else if(t.classList.contains('vdesc')){it.desc=val}
- else if(t.classList.contains('vnum')){it.speed=val}
- if(!t.innerText.trim()){t.innerHTML=''}
- commit();
-},true);
-
-vgrid.addEventListener('keydown',function(e){
- if(e.key==='Enter'&&e.target.classList&&(e.target.classList.contains('vname')||e.target.classList.contains('vnum'))){
-  e.preventDefault();
-  e.target.blur();
- }
-});
-vgrid.addEventListener('paste',function(e){
- if(!e.target.isContentEditable){return}
- e.preventDefault();
- var t=(e.clipboardData||window.clipboardData).getData('text/plain');
- document.execCommand('insertText',false,t);
-},true);
-
-document.addEventListener('dragover',function(e){e.preventDefault()});
-document.addEventListener('drop',function(e){e.preventDefault()});
-
-$('#q').addEventListener('input',function(){ if(!booted){return} state.q=this.value.trim();renderGrid() });
-
-/* ===================== СМЕНА РАЗДЕЛА ===================== */
-function askOrg(id){
- if(!adminMode){return}
- var it=byId(id);
- if(!it){return}
- var cur=it.dep;
- var h='';
- if(!DEPS.length){
-  h='<div style="color:#8b95a7;font-size:12.5px">Нет доступных разделов. Добавьте их через ⚙️ Разделы.</div>';
- }else{
-  for(var i=0;i<DEPS.length;i++){
-   if(DEPS[i].cat!==it.cat){continue}
-   h+='<button class="clsbtn'+(DEPS[i].k===cur?' on':'')+'" style="--cc:'+DEPS[i].c+';--ccb:'+hex2rgba(DEPS[i].c,.14)+'" data-setorg="'+id+'" data-val="'+DEPS[i].k+'">'+
-    '<span class="dot" style="background:'+DEPS[i].c+'"></span>'+esc(DEPS[i].n)+
-    (DEPS[i].k===cur?'<b class="cn" style="margin-left:auto">текущее</b>':'')+
-    '</button>';
-  }
- }
- $('#croot').innerHTML=
- '<div class="back" onclick="if(event.target===this)closeC()"><div class="modal smw">'+
-  '<div class="m-head"><div class="mh-nm" style="font-size:16px">Раздел</div>'+
-  '<div class="mh-sub">«'+esc(it.name||'Без названия')+'» · '+esc(catName(it.kind,it.cat))+' — куда перевести:</div>'+
-  '<button class="m-close" onclick="closeC()">✕</button></div>'+
-  '<div class="m-body"><div class="clsgrid">'+h+'</div></div>'+
-  '<div class="m-foot"><button class="btn ghost" onclick="closeC()">Отмена</button></div>'+
- '</div></div>';
-}
-function setOrg(id,dk){
- var it=byId(id);
- if(!it){closeC();return}
- if(it.dep===dk){closeC();return}
- var oldName=dep(it.dep).s;
- it.dep=dk;
- /* если у нового раздела есть классы и текущий ключ не подходит — ставим первый */
- var classes=classesOfDep(dk);
- if(classes.length){
-  var found=false;
-  for(var i=0;i<classes.length;i++){ if(classes[i].k===it.cls){found=true;break} }
-  if(!found){ it.cls=classes[0].k }
- }else{
-  it.cls='';
- }
- closeC();
- commit();
- render();
- toast('«'+(it.name||'без названия')+'»: '+oldName+' → '+dep(dk).s);
+   toast('Перенесено в «'+classNameOf(it.dep,ck)+'»');
+  });
+ });
 }
 
-/* ===================== СМЕНА КЛАССА ===================== */
-function askClass(id){
- if(!adminMode){return}
- var it=byId(id);
- if(!it){return}
- var classes=classesOfDep(it.dep);
- if(!classes.length){
-  toast('В разделе «'+dep(it.dep).n+'» нет классов — добавьте их через ⚙️ Разделы',true);
-  return;
- }
- var cur=clsOf(it);
- var h='';
- for(var i=0;i<classes.length;i++){
-  h+='<button class="clsbtn'+(classes[i].k===cur?' on':'')+'" style="--cc:'+classes[i].c+';--ccb:'+hex2rgba(classes[i].c,.14)+'" data-setcls="'+id+'" data-val="'+classes[i].k+'">'+
-   '<span class="dot" style="background:'+classes[i].c+'"></span>'+esc(classes[i].n)+
-   (classes[i].k===cur?'<b class="cn" style="margin-left:auto">текущий</b>':'')+
-   '</button>';
- }
- $('#croot').innerHTML=
- '<div class="back" onclick="if(event.target===this)closeC()"><div class="modal smw">'+
-  '<div class="m-head"><div class="mh-nm" style="font-size:16px">Класс машины</div>'+
-  '<div class="mh-sub">Раздел «'+esc(dep(it.dep).n)+'» · «'+esc(it.name||'Без названия')+'» — выберите класс:</div>'+
-  '<button class="m-close" onclick="closeC()">✕</button></div>'+
-  '<div class="m-body"><div class="clsgrid">'+h+'</div></div>'+
-  '<div class="m-foot"><button class="btn ghost" onclick="closeC()">Отмена</button></div>'+
- '</div></div>';
-}
-function setCls(id,cls){
- var it=byId(id);
- if(!it){closeC();return}
- var oldName=classNameOf(it.dep,clsOf(it));
- it.cls=cls;
- closeC();
- commit();
- render();
- toast('«'+(it.name||'без названия')+'»: '+oldName+' → '+classNameOf(it.dep,cls));
-}
+/* ===================== МОДАЛКИ: ДОБАВЛЕНИЕ / РЕДАКТИРОВАНИЕ ===================== */
+var editingId=null, editPhoto='', formCls=null, photoCb=null;
 
-/* обработчик динамических кнопок в модалках */
-document.addEventListener('click',function(e){
- var t=e.target;
- if(!t||!t.closest){return}
- var el=t.closest('[data-setorg]');
- if(el){setOrg(el.getAttribute('data-setorg'),el.getAttribute('data-val'));return}
- el=t.closest('[data-setcls]');
- if(el){setCls(el.getAttribute('data-setcls'),el.getAttribute('data-val'));return}
- el=t.closest('[data-depcls]');
- if(el){openClassesManager(el.getAttribute('data-depcls'));return}
- el=t.closest('[data-classdel]');
- if(el){deleteClass(currentClassDepK,el.getAttribute('data-classdel'));return}
- el=t.closest('[data-depdel]');
- if(el){deleteDep(el.getAttribute('data-depdel'));return}
- el=t.closest('[data-del]');
- if(el){delItem(el.getAttribute('data-del'))}
-});
+function closeM(){ var m=$('#mroot'); if(m){m.innerHTML=''} editingId=null; photoCb=null }
+function closeC(){ var c=$('#croot'); if(c){c.innerHTML=''} }
 
-/* ===================== ЛАЙТБОКС ===================== */
-var lbCloseTimer=null;
-function openLB(id){
- var it=byId(id);
- if(!it||!it.photo){return}
- if(lbCloseTimer){clearTimeout(lbCloseTimer);lbCloseTimer=null}
- var d=dep(it.dep);
- var sub='<i class="lbdot" style="background:'+d.c+'"></i>'+esc(d.n)+(it.kind==='cars'&&it.speed?' · '+esc(it.speed)+' км/ч':'');
- var img=$('#lbImg');
- img.setAttribute('src',it.photo);
- $('#lbCap').innerHTML=esc(it.name||'Без названия')+'<span>'+sub+'</span>';
- var lb=$('#lb');
- lb.classList.add('show');
- requestAnimationFrame(function(){requestAnimationFrame(function(){lb.classList.add('zoom')})});
-}
-function closeLB(){
- var lb=$('#lb');
- lb.classList.remove('zoom');
- if(lbCloseTimer){clearTimeout(lbCloseTimer)}
- lbCloseTimer=setTimeout(function(){
-  lbCloseTimer=null;
-  lb.classList.remove('show');
-  var img=$('#lbImg');
-  if(img){img.removeAttribute('src')}
- },240);
-}
-$('#lb').addEventListener('click',function(e){
- if(e.target===this||e.target.id==='lbImg'){closeLB()}
-});
-
-/* ===================== МОДАЛКА ДОБАВЛЕНИЯ ===================== */
-function closeM(){$('#mroot').innerHTML=''}
-function setAddPrev(src){var z=$('#aphIn');if(z){z.innerHTML='<img src="'+src+'">'}}
-function fillMDeps(cat,sel){
- var o='';
- for(var i=0;i<DEPS.length;i++){
-  if(DEPS[i].cat===cat){o+='<option value="'+esc(DEPS[i].k)+'">'+esc(DEPS[i].n)+'</option>'}
- }
- var el=$('#fDep');
- if(!el){return}
- if(!o){o='<option value="">— нет разделов —</option>'}
- el.innerHTML=o;
- if(sel){
-  for(var j=0;j<DEPS.length;j++){
-   if(DEPS[j].k===sel&&DEPS[j].cat===cat){el.value=sel;break}
-  }
- }
- refreshAddClasses();
-}
-function refreshAddClasses(){
- var fDep=$('#fDep'),fCls=$('#fCls');
- if(!fCls){return}
- var depKey=fDep?fDep.value:'';
- var classes=classesOfDep(depKey);
- var o='';
- if(!classes.length){ o='<option value="">— нет классов —</option>' }
- else{ for(var i=0;i<classes.length;i++){ o+='<option value="'+esc(classes[i].k)+'">'+esc(classes[i].n)+'</option>' } }
- fCls.innerHTML=o;
-}
-function updClsRow(){
- var row=$('#clsRow');
- if(!row){return}
- var show=(state.kind==='cars');
- row.style.display=show?'':'none';
- if(show){refreshAddClasses()}
-}
 function openAdd(){
+ if(!adminMode){
+  if(!REPO){ adminMode=true; renderTop() }
+  else{ askAdmin(); return }
+ }
+ openForm(null);
+}
+function openEdit(id){
  if(!adminMode){return}
- addPhoto=null;
- var isCars=state.kind==='cars';
- var catOpts='';
- var a=CATS[state.kind];
- for(var i=0;i<a.length;i++){
-  catOpts+='<option value="'+a[i].k+'"'+(a[i].k===state.cat?' selected':'')+'>'+esc(a[i].n)+'</option>';
+ var it=byId(id);
+ if(!it){return}
+ openForm(it);
+}
+function openForm(it){
+ editingId=it?it.id:null;
+ editPhoto=it?(it.photo||''):'';
+ formCls=(it&&it.cls)?it.cls:null;
+ var isCars=(state.kind==='cars');
+ var selDep=it?it.dep:(state.dep!=='all'?state.dep:null);
+ var depOpts='';
+ for(var i=0;i<DEPS.length;i++){
+  var d=DEPS[i];
+  if(d.cat!==state.cat){continue}
+  depOpts+='<option value="'+esc(d.k)+'"'+((selDep&&selDep===d.k)||(!selDep&&!depOpts)?' selected':'')+'>'+esc(d.n)+'</option>';
  }
  $('#mroot').innerHTML=
- '<div class="back" onclick="if(event.target===this)closeM()"><div class="modal" style="max-width:580px">'+
-  '<div class="m-head"><div class="mh-nm" style="font-size:17px">'+(isCars?'Новая машина':'Новая форма')+'</div>'+
-  '<div class="mh-sub">Заполните карточку — фото можно загрузить сразу или позже, кликнув по окну в общем списке</div>'+
-  '<button class="m-close" onclick="closeM()">✕</button></div>'+
-  '<div class="m-body">'+
-  '<div class="aph" id="aph"><div class="aph-in" id="aphIn"><span class="aph-ic">🖼️</span><b>Загрузить фото</b><span>клик или перетащите файл сюда</span></div></div>'+
-  '<div class="formgrid" style="margin-top:16px">'+
-  '<div><label class="flab">Категория</label><select class="sel" id="fCat" style="width:100%" onchange="fillMDeps(this.value);updClsRow()">'+catOpts+'</select></div>'+
-  '<div><label class="flab">Раздел</label><select class="sel" id="fDep" style="width:100%" onchange="refreshAddClasses()"></select></div>'+
-  (isCars?'<div id="clsRow"><label class="flab">Класс</label><select class="sel" id="fCls" style="width:100%"></select></div>':'')+
-  (isCars?'<div><label class="flab">Макс. скорость, км/ч</label><input class="inp" id="fSp" style="width:100%" placeholder="напр. 180"></div>':'')+
-  '<div class="full"><label class="flab">Название</label><input class="inp" id="fName" style="width:100%" placeholder="'+(isCars?'напр. Lada Vesta · ДПС':'напр. Летняя форма')+'"></div>'+
-  '<div class="full"><label class="flab">Описание</label><textarea class="inp" id="fDesc" rows="3" style="width:100%" placeholder="'+(isCars?'Подразделение, назначение, комплектация…':'Комплектация, сезон, особенности…')+'"></textarea></div>'+
-  '</div>'+
-  '</div>'+
-  '<div class="m-foot"><button class="btn ghost" onclick="closeM()">Отмена</button>'+
-  '<button class="btn" onclick="submitAdd()">'+(isCars?'Добавить машину':'Добавить форму')+'</button></div>'+
+ '<div class="back" onclick="if(event.target===this)closeM()"><div class="modal">'+
+ '<div class="m-head"><div class="mh-nm">'+(it?'✏️ Редактирование':'＋ '+(isCars?'Новая машина':'Новая форма'))+'</div>'+
+ '<div class="mh-sub">'+esc(catName(state.kind,state.cat))+'</div>'+
+ '<button class="m-close" onclick="closeM()">✕</button></div>'+
+ '<div class="m-body"><div class="formgrid">'+
+  '<div class="full"><label class="flab">Название</label><input class="inp" id="fName" style="width:100%" value="'+esc(it?it.name:'')+'" placeholder="Например: Toyota Camry"></div>'+
+  '<div class="full"><label class="flab">Описание</label><textarea class="inp" id="fDesc" rows="2" style="width:100%;min-height:44px" placeholder="Краткое описание…">'+esc(it?it.desc:'')+'</textarea></div>'+
+  '<div><label class="flab">Раздел</label><select class="sel" id="fDep" style="width:100%" onchange="renderClsPicker(formCls)">'+depOpts+'</select></div>'+
+  (isCars?'<div><label class="flab">Скорость, км/ч</label><input class="inp" id="fSpeed" style="width:100%" value="'+esc(it?it.speed:'')+'" placeholder="180"></div>':'')+
+  (isCars?'<div class="full"><label class="flab">Класс</label><div id="fClsBox"></div></div>':'')+
+  '<div class="full"><label class="flab">Фотография</label><div class="aph" id="fAph"></div>'+
+  '<div class="hint">Фото автоматически сжимается перед сохранением. Нажмите на область или перетащите файл.</div></div>'+
+ '</div></div>'+
+ '<div class="m-foot"><button class="btn ghost" onclick="closeM()">Отмена</button>'+
+ '<button class="btn" onclick="saveForm()">'+(it?'Сохранить':'Добавить')+'</button></div>'+
  '</div></div>';
- fillMDeps(state.cat,state.dep);
- updClsRow();
- var aph=$('#aph');
- aph.addEventListener('click',function(e){if(e.target.tagName!=='IMG'){pickPhoto('add',null)}});
- aph.addEventListener('dragover',function(e){e.preventDefault();aph.classList.add('drag')});
- aph.addEventListener('dragleave',function(){aph.classList.remove('drag')});
- aph.addEventListener('drop',function(e){
-  e.preventDefault();
-  aph.classList.remove('drag');
-  var f=e.dataTransfer.files[0];
-  if(f){loadFile(f,'add',null)}
- });
+ if(isCars){ renderClsPicker(formCls) }
+ renderAph();
+ var a=$('#fAph');
+ if(a){
+  a.addEventListener('click',function(e){
+   if(e.target.closest('.vtool')){return}
+   pickPhoto(function(data){ editPhoto=data; renderAph() });
+  });
+  a.addEventListener('dragover',function(e){ e.preventDefault(); a.classList.add('drag') });
+  a.addEventListener('dragleave',function(){ a.classList.remove('drag') });
+  a.addEventListener('drop',function(e){
+   e.preventDefault();
+   a.classList.remove('drag');
+   var f=e.dataTransfer.files&&e.dataTransfer.files[0];
+   if(!f){return}
+   compressImage(f,function(data){ editPhoto=data; renderAph() });
+  });
+ }
  setTimeout(function(){ var n=$('#fName'); if(n){n.focus()} },60);
 }
-function submitAdd(){
- if(!adminMode){return}
- var nameEl=$('#fName');
- var name=nameEl?nameEl.value.trim():'';
- if(!name){
-  toast(state.kind==='cars'?'Введите название машины':'Введите название формы',true);
-  if(nameEl){nameEl.focus()}
+function renderClsPicker(selK){
+ var box=$('#fClsBox');
+ if(!box){return}
+ var depK=$('#fDep')?$('#fDep').value:'';
+ var classes=classesOfDep(depK);
+ if(!classes.length){
+  box.innerHTML='<div class="hint" style="margin-top:0">В этом разделе нет классов — добавьте их в ⚙️ Разделы.</div>';
+  formCls=null;
   return;
  }
- var fCat=$('#fCat'),fDep=$('#fDep'),fCls=$('#fCls'),fDesc=$('#fDesc'),fSp=$('#fSp');
- var depVal=fDep?fDep.value:'';
- if(!depVal){
-  var firstDep=null;
-  for(var i=0;i<DEPS.length;i++){ if(DEPS[i].cat===(fCat?fCat.value:'main')){firstDep=DEPS[i];break} }
-  if(firstDep){depVal=firstDep.k}
+ var found=false;
+ for(var i=0;i<classes.length;i++){ if(classes[i].k===selK){found=true;break} }
+ if(!found){ selK=classes[0].k }
+ formCls=selK;
+ var h='<div class="clsgrid">';
+ for(var j=0;j<classes.length;j++){
+  var c=classes[j];
+  h+='<button type="button" class="clsbtn'+(c.k===selK?' on':'')+'" style="--cc:'+c.c+';--ccb:'+hex2rgba(c.c,.16)+'" onclick="renderClsPicker(\''+esc(c.k)+'\')">'+
+   '<span style="width:10px;height:10px;flex:0 0 10px;border-radius:50%;background:'+c.c+';box-shadow:0 0 8px 1px '+hex2rgba(c.c,.45)+'"></span>'+esc(c.n)+'</button>';
  }
- var clsVal=fCls?fCls.value:'';
- /* если в разделе нет классов — cls пустой */
- if(!classesOfDep(depVal).length){ clsVal='' }
- ITEMS.unshift({
-  id:'n'+Date.now()+Math.floor(Math.random()*999),
-  kind:state.kind,
-  cat:fCat?fCat.value:'main',
-  dep:depVal,
-  cls:clsVal,
-  name:name,
-  desc:fDesc?fDesc.value.trim():'',
-  speed:state.kind==='cars'&&fSp?fSp.value.trim():'',
-  photo:addPhoto||''
- });
- if(fCat){state.cat=fCat.value}
- if(depVal){state.dep=depVal}
+ h+='</div>';
+ box.innerHTML=h;
+}
+function renderAph(){
+ var a=$('#fAph');
+ if(!a){return}
+ if(editPhoto){
+  a.innerHTML='<img src="'+editPhoto+'" alt="">'+
+   '<button class="vtool vtool-del" style="position:absolute;top:10px;right:10px;z-index:3" title="Убрать фото" onclick="event.stopPropagation();clearPhoto()">🗑</button>';
+ }else{
+  a.innerHTML='<div class="aph-in"><div class="aph-ic">📷</div><b>Добавить фото</b><span>нажмите или перетащите файл</span></div>';
+ }
+}
+function clearPhoto(){ editPhoto=''; renderAph() }
+function saveForm(){
+ var name=($('#fName')?$('#fName').value:'').trim();
+ if(!name){toast('Введите название',true);return}
+ var depK=$('#fDep')?$('#fDep').value:'';
+ if(!depK){toast('Выберите раздел',true);return}
+ var it=null;
+ if(editingId){ it=byId(editingId) }
+ var isNew=!it;
+ if(isNew){
+  it={id:'i'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),kind:state.kind,cat:state.cat,dep:depK,cls:'',name:'',desc:'',speed:'',photo:''};
+  ITEMS.push(it);
+ }
+ it.name=name;
+ it.desc=($('#fDesc')?$('#fDesc').value:'').trim();
+ it.dep=depK;
+ it.cls=(state.kind==='cars')?(formCls||''):'';
+ it.speed=($('#fSpeed')?$('#fSpeed').value:'').trim();
+ it.photo=editPhoto;
  closeM();
  commit();
  render();
- toast(state.kind==='cars'?'Машина добавлена: «'+name+'»':'Форма добавлена: «'+name+'»');
-}
-
-/* ===================== УДАЛЕНИЕ КАРТОЧКИ ===================== */
-function closeC(){$('#croot').innerHTML=''}
-function askDel(id){
- if(!adminMode){return}
- var it=byId(id);
- if(!it){return}
- var d=dep(it.dep);
- var clsLine='';
- if(classesOfDep(it.dep).length){
-  clsLine='<br>Класс: '+esc(classNameOf(it.dep,clsOf(it)));
- }
- var info='<i class="lbdot" style="background:'+d.c+'"></i>'+esc(d.n)+(it.kind==='cars'&&it.speed?' · '+esc(it.speed)+' км/ч':'')+clsLine;
- $('#croot').innerHTML=
- '<div class="back" onclick="if(event.target===this)closeC()"><div class="modal smw">'+
-  '<div class="m-head"><div class="mh-nm" style="font-size:16px">Удалить карточку?</div>'+
-  '<div class="mh-sub">«'+esc(it.name||'Без названия')+'»<br>'+info+'<br>Категория: '+esc(catName(it.kind,it.cat))+'</div></div>'+
-  '<div class="m-foot" style="justify-content:flex-end"><button class="btn ghost" onclick="closeC()">Отмена</button>'+
-  '<button class="btn warn" data-del="'+id+'">Удалить</button></div>'+
- '</div></div>';
+ toast(isNew?'Запись добавлена':'Изменения сохранены');
 }
 function delItem(id){
  if(!adminMode){return}
+ var it=byId(id);
+ if(!it){return}
+ if(!window.confirm('Удалить «'+(it.name||'без названия')+'»?')){return}
  for(var i=0;i<ITEMS.length;i++){
-  if(ITEMS[i].id===id){ITEMS.splice(i,1);break}
+  if(ITEMS[i].id===id){ ITEMS.splice(i,1); break }
  }
- closeC();
  commit();
  render();
- toast('Карточка удалена');
+ toast('Запись удалена');
 }
 
-/* ===================== КЛАВИАТУРА ===================== */
-document.addEventListener('keydown',function(e){
- if(e.key==='Escape'){
-  if($('#lb').classList.contains('show')){closeLB()}
-  else{closeM();closeC()}
-  return;
- }
- if(e.key==='Enter'&&e.target){
-  if(e.target.id==='newDepName'){e.preventDefault();addDepFromModal();return}
-  if(e.target.id==='newClassName'){e.preventDefault();addClassFromModal();return}
-  if(e.target.classList&&(e.target.classList.contains('dep-name')||e.target.classList.contains('class-name'))){e.preventDefault();e.target.blur();return}
- }
-});
-
-/* ===================== СТАРТ ===================== */
-if(REPO){
- initRemote();
-}else{
- ITEMS=loadLocal();
- booted=true;
- render();
- setSync('','Локально');
+/* ===================== ФОТО ===================== */
+function pickPhoto(cb){
+ photoCb=cb;
+ var f=$('#fileInp');
+ if(!f){return}
+ f.value='';
+ f.click();
 }
+function pickPhotoFor(id){
+ if(!adminMode){return}
+ pickPhoto(function(data){
+  var it=byId(id);
+  if(!it){return}
+  it.photo=data;
+  commit();
+  render();
+  toast('Фото обновлено');
+ });
+}
+function compressImage(file,cb){
+ var img=new Image();
+ var url=URL.createObjectURL(file);
+ img.onload=function(){
+  var MAX=1400;
+  var w=img.naturalWidth||img.width;
+  var h=img.naturalHeight||img.height;
+  var k=Math.min(1,MAX/Math.max(w,h));
+  var cv=document.createElement('canvas');
+  cv.width=Math.max(1,Math.round(w*k));
+  cv.height=Math.max(1,Math.round(h*k));
+  cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+  var out;
+  try{ out=cv.toDataURL('image/jpeg',.85) }catch(e){ out=img.src }
+  URL.revokeObjectURL(url);
+  if(cb){cb(out)}
+ };
+ img.onerror=function(){
+  URL.revokeObjectURL(url);
+  toast('Не удалось прочитать файл изображения',true);
+ };
+ img.src=url;
+}
+
+/* ===================== ЛАЙТБОКС ===================== */
+var lbTimer=null;
+function openLb(id){
+ var it=byId(id);
+ if(!it||!it.photo){return}
+ var d=dep(it.dep);
+ var img=$('#lbImg');
+ if(img){ img.src=it.photo }
+ var cap=$('#lbCap');
+ if(cap){
+  cap.innerHTML='<span class="lbdot" style="background:'+d.c+';box-shadow:0 0 8px 1px '+hex2rgba(d.c,.5)+'"></span>'+esc(it.name||'—')+
+   (it.desc?'<span>'+esc(it.desc)+'</span>':'');
+ }
+ var lb=$('#lb');
+ if(!lb){return}
+ lb.classList.add('show');
+ if(lbTimer){clearTimeout(lbTimer)}
+ lbTimer=setTimeout(function(){ lb.classList.add('zoom') },30);
+}
+function closeLb(){
+ var lb=$('#lb');
+ if(!lb||!lb.classList.contains('show')){return}
+ lb.classList.remove('zoom');
+ if(lbTimer){clearTimeout(lbTimer)}
+ lbTimer=setTimeout(function(){
+  lb.classList.remove('show');
+  var img=$('#lbImg');
+  if(img){ img.src='' }
+ },240);
+}
+
+/* ===================== ЗАПУСК ===================== */
+(function(){
+ renderTop();
+ var qi=$('#q');
+ if(qi){ qi.addEventListener('input',function(){ state.q=this.value; renderGrid() }) }
+ var lb=$('#lb');
+ if(lb){ lb.addEventListener('click',closeLb) }
+ var fi=$('#fileInp');
+ if(fi){
+  fi.addEventListener('change',function(){
+   var f=this.files&&this.files[0];
+   this.value='';
+   if(!f||!photoCb){return}
+   var cb=photoCb;
+   photoCb=null;
+   compressImage(f,cb);
+  });
+ }
+ document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){ closeLb(); closeC(); closeM() }
+ });
+ if(REPO){ initRemote() }
+ else{ ITEMS=loadLocal(); finishBoot('','Локально') }
+})();
 </script>
 </body>
 </html>
